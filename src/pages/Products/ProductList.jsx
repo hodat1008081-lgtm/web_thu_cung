@@ -1,4 +1,5 @@
 // src/pages/Products/ProductList.jsx
+ feature/danhsachsp
 // Quản lý hiển thị danh sách sản phẩm thú cưng & phụ kiện (Nhiệm vụ: San San)
 import React from 'react';
 
@@ -128,9 +129,30 @@ export const formatPriceVND = (amount) => {
 export default function ProductList({
   products,
   onViewDetail,
+=======
+// Nhiệm vụ: San San - Quản lý hiển thị danh sách sản phẩm thú cưng & phụ kiện
+// Tích hợp: Hệ thống Tìm kiếm (SearchBar) & Bộ lọc (FilterSidebar) của Vân
+import { formatCurrency } from '../../data/products';
+
+export default function ProductList({
+  products = [],
+  activeCategory = 'all',
+  setActiveCategory,
+  searchTerm = '',
+  setSearchTerm,
+  priceRange = 'all',
+  setPriceRange,
+  sortBy = 'default',
+  setSortBy,
+  onResetFilters,
+  wishlist = [],
+  onToggleWishlist,
+  onAddToCart,
+main
   onSelectProduct,
   onAddToCart,
 }) {
+ feature/danhsachsp
   // Ưu tiên hiển thị 6 sản phẩm mẫu chuẩn theo yêu cầu
   const displayProducts = SAMPLE_PRODUCTS;
 
@@ -140,6 +162,59 @@ export default function ProductList({
     if (onSelectProduct) onSelectProduct(product);
   };
 
+  // Label danh mục đang chọn
+  const getCategoryLabel = (cat) => {
+    switch (cat) {
+      case 'dog':
+        return '🐶 Chó cảnh';
+      case 'cat':
+        return '🐱 Mèo cảnh';
+      case 'food':
+        return '🥣 Thức ăn';
+      case 'accessory':
+        return '🎀 Phụ kiện';
+      default:
+        return 'Tất cả';
+    }
+  };
+
+  // Label khoảng giá đang chọn
+  const getPriceRangeLabel = (pr) => {
+    switch (pr) {
+      case 'under-1m':
+        return '< 1.000.000₫';
+      case '1m-5m':
+        return '1.000.000₫ - 5.000.000₫';
+      case '5m-10m':
+        return '5.000.000₫ - 10.000.000₫';
+      case 'above-10m':
+        return '> 10.000.000₫';
+      default:
+        return null;
+    }
+  };
+
+  // Label sắp xếp đang chọn
+  const getSortLabel = (sb) => {
+    switch (sb) {
+      case 'price-asc':
+        return 'Giá: Thấp -> Cao';
+      case 'price-desc':
+        return 'Giá: Cao -> Thấp';
+      case 'rating-desc':
+        return 'Đánh giá cao nhất';
+      default:
+        return null;
+    }
+  };
+
+  const isFiltered =
+    activeCategory !== 'all' ||
+    priceRange !== 'all' ||
+    sortBy !== 'default' ||
+    Boolean(searchTerm && searchTerm.trim());
+
+ main
   return (
     <section className="products-section" id="featured-products">
       <div className="container">
@@ -155,6 +230,7 @@ export default function ProductList({
           </div>
         </div>
 
+ feature/danhsachsp
         {/* Grid danh sách 6 sản phẩm */}
         <div
           className="products-grid"
@@ -204,6 +280,126 @@ export default function ProductList({
                     transition: 'transform 0.3s ease',
                   }}
                 />
+
+        {/* Thanh trạng thái bộ lọc đang áp dụng (Active Filters Bar) */}
+        {isFiltered && (
+          <div className="active-filters-bar">
+            <div className="active-filters-info">
+              <span className="results-count-badge">
+                🔍 Tìm thấy <strong>{products.length}</strong> sản phẩm phù hợp
+              </span>
+
+              <div className="active-filter-chips">
+                {/* Chip từ khóa tìm kiếm */}
+                {searchTerm && searchTerm.trim() && (
+                  <span className="filter-chip">
+                    <span>Từ khóa: "{searchTerm}"</span>
+                    {setSearchTerm && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchTerm('')}
+                        title="Bỏ từ khóa này"
+                        className="chip-remove-btn"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </span>
+                )}
+
+                {/* Chip danh mục */}
+                {activeCategory !== 'all' && (
+                  <span className="filter-chip">
+                    <span>{getCategoryLabel(activeCategory)}</span>
+                    {setActiveCategory && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveCategory('all')}
+                        title="Bỏ lọc danh mục"
+                        className="chip-remove-btn"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </span>
+                )}
+
+                {/* Chip khoảng giá */}
+                {priceRange !== 'all' && getPriceRangeLabel(priceRange) && (
+                  <span className="filter-chip">
+                    <span>Giá: {getPriceRangeLabel(priceRange)}</span>
+                    {setPriceRange && (
+                      <button
+                        type="button"
+                        onClick={() => setPriceRange('all')}
+                        title="Bỏ lọc giá"
+                        className="chip-remove-btn"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </span>
+                )}
+
+                {/* Chip sắp xếp */}
+                {sortBy !== 'default' && getSortLabel(sortBy) && (
+                  <span className="filter-chip">
+                    <span>Sắp xếp: {getSortLabel(sortBy)}</span>
+                    {setSortBy && (
+                      <button
+                        type="button"
+                        onClick={() => setSortBy('default')}
+                        title="Bỏ sắp xếp"
+                        className="chip-remove-btn"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Nút xóa nhanh tất cả bộ lọc */}
+            {onResetFilters && (
+              <button
+                type="button"
+                onClick={onResetFilters}
+                className="reset-all-filters-btn"
+                title="Xóa tất cả điều kiện tìm kiếm và bộ lọc"
+              >
+                ✕ Đặt lại tất cả
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Grid sản phẩm hoặc Trạng thái rỗng */}
+        {products.length === 0 ? (
+          <div className="empty-products-state">
+            <div className="empty-icon-circle">🔍</div>
+            <h3 className="empty-title">Không tìm thấy sản phẩm nào!</h3>
+            <p className="empty-desc">
+              Không có thú cưng hoặc sản phẩm nào khớp với các tiêu chí tìm kiếm và bộ lọc hiện tại của bạn.
+            </p>
+            <div className="empty-suggestions">
+              <span>Gợi ý:</span> Thử tìm với từ khóa khác, hoặc đặt lại khoảng giá và danh mục.
+            </div>
+            {onResetFilters ? (
+              <button className="btn-primary-cta" onClick={onResetFilters}>
+                ✕ Xóa bộ lọc & Xem tất cả sản phẩm
+              </button>
+            ) : setActiveCategory ? (
+              <button className="btn-primary-cta" onClick={() => setActiveCategory('all')}>
+                Xem tất cả sản phẩm
+              </button>
+            ) : null}
+          </div>
+        ) : (
+          <div className="products-grid">
+            {products.map((product) => {
+              const isFavorite = wishlist.includes(product.id);
+ main
 
                 {/* Badge trạng thái */}
                 {product.badge && (
