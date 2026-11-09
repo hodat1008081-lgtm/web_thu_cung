@@ -1,5 +1,4 @@
 // src/components/Header/Header.jsx
-import React from 'react';
 import SearchBar from '../Search/SearchBar';
 
 export default function Header({
@@ -11,6 +10,8 @@ export default function Header({
   onOpenAuth,
   activeCategory,
   setActiveCategory,
+  priceRange,
+  setPriceRange,
   onOpenServiceModal,
   onNavigateTab,
   currentTab = 'home',
@@ -79,10 +80,14 @@ export default function Header({
           </div>
         </div>
 
-        {/* Component SearchBar (Vân) */}
+        {/* Component SearchBar (Vân - Nhiệm vụ Tìm kiếm & Lọc nhanh) */}
         <SearchBar
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
+          activeCategory={activeCategory}
+          setActiveCategory={setActiveCategory}
+          priceRange={priceRange}
+          setPriceRange={setPriceRange}
           onSearch={() => {
             if (onNavigateTab) onNavigateTab('home');
             const el = document.getElementById('featured-products');

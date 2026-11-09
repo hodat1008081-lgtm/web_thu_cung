@@ -10,7 +10,7 @@
 // - Vương: Tra cứu đơn hàng (TrackingTimeline) & Đề xuất (BehaviorAnalysis)
 // ==============================================================================
 
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import './App.css';
 
 // 1. Data dùng chung
@@ -67,7 +67,7 @@ export default function App() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [priceRange, setPriceRange] = useState('all');
   const [sortBy, setSortBy] = useState('default');
-  const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
+  const [showAdvancedFilter, setShowAdvancedFilter] = useState(true);
 
   // Giỏ hàng
   const [cartItems, setCartItems] = useState([
@@ -274,14 +274,34 @@ export default function App() {
     }
   };
 
+  // Hàm đặt lại toàn bộ tìm kiếm & bộ lọc (Vân)
+  const handleResetFilters = () => {
+    setActiveCategory('all');
+    setPriceRange('all');
+    setSortBy('default');
+    setSearchTerm('');
+  };
+
   // Bộ lọc sản phẩm (Vân & San San)
   const filteredProducts = useMemo(() => {
     let list = products.filter((prod) => {
+      // 1. Lọc theo danh mục / Loài thú cưng
       const matchCategory = activeCategory === 'all' || prod.category === activeCategory;
-      const matchSearch =
-        prod.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        prod.categoryName.toLowerCase().includes(searchTerm.toLowerCase());
 
+      // 2. Lọc theo từ khóa tìm kiếm (tên, phân loại, mô tả, đặc điểm tags)
+      const cleanSearch = searchTerm.toLowerCase().trim();
+      let matchSearch = true;
+      if (cleanSearch) {
+        const inName = prod.name ? prod.name.toLowerCase().includes(cleanSearch) : false;
+        const inCat = prod.categoryName ? prod.categoryName.toLowerCase().includes(cleanSearch) : false;
+        const inDesc = prod.description ? prod.description.toLowerCase().includes(cleanSearch) : false;
+        const inTags = prod.tags && Array.isArray(prod.tags)
+          ? prod.tags.some((t) => t.toLowerCase().includes(cleanSearch))
+          : false;
+        matchSearch = inName || inCat || inDesc || inTags;
+      }
+
+      // 3. Lọc theo khoảng giá tiền
       let matchPrice = true;
       if (priceRange === 'under-1m') matchPrice = prod.price < 1000000;
       else if (priceRange === '1m-5m') matchPrice = prod.price >= 1000000 && prod.price <= 5000000;
@@ -291,6 +311,7 @@ export default function App() {
       return matchCategory && matchSearch && matchPrice;
     });
 
+    // 4. Sắp xếp danh sách kết quả
     if (sortBy === 'price-asc') {
       list.sort((a, b) => a.price - b.price);
     } else if (sortBy === 'price-desc') {
@@ -495,20 +516,25 @@ export default function App() {
                   setPriceRange={setPriceRange}
                   sortBy={sortBy}
                   setSortBy={setSortBy}
-                  onResetFilters={() => {
-                    setActiveCategory('all');
-                    setPriceRange('all');
-                    setSortBy('default');
-                    setSearchTerm('');
-                  }}
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                  totalResults={filteredProducts.length}
+                  onResetFilters={handleResetFilters}
                 />
               )}
 
-              {/* Danh sách sản phẩm (San San) */}
+              {/* Danh sách sản phẩm (San San) & Tích hợp Bộ lọc (Vân) */}
               <ProductList
                 products={filteredProducts}
                 activeCategory={activeCategory}
                 setActiveCategory={setActiveCategory}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                priceRange={priceRange}
+                setPriceRange={setPriceRange}
+                sortBy={sortBy}
+                setSortBy={setSortBy}
+                onResetFilters={handleResetFilters}
                 wishlist={wishlist}
                 onToggleWishlist={handleToggleWishlist}
                 onAddToCart={handleAddToCart}
