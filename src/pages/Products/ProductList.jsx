@@ -1,4 +1,135 @@
 // src/pages/Products/ProductList.jsx
+ feature/danhsachsp
+// Quản lý hiển thị danh sách sản phẩm thú cưng & phụ kiện (Nhiệm vụ: San San)
+import React from 'react';
+
+// Danh sách 6 sản phẩm thú cưng mẫu với hình ảnh thật nét từ Unsplash
+export const SAMPLE_PRODUCTS = [
+  {
+    id: 1,
+    name: 'Thức ăn hạt Royal Canin Maxi Puppy 2kg',
+    price: 420000,
+    originalPrice: 480000,
+    categoryName: 'Thức ăn & Dinh dưỡng',
+    badge: '-12%',
+    badgeType: 'discount',
+    rating: 5.0,
+    reviewsCount: 128,
+    image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=800&auto=format&fit=crop&q=80',
+    description: 'Thức ăn hạt dinh dưỡng cao cấp xuất xứ từ Pháp, công thức đặc chế giàu protein chất lượng cao, men vi sinh tiêu hóa và DHA giúp phát triển trí não tối ưu cho chó mèo con dưới 12 tháng tuổi.',
+    specs: {
+      'Thương hiệu': 'Royal Canin (Pháp)',
+      'Trọng lượng': '2.0 kg',
+      'Độ tuổi phù hợp': 'Dành cho thú cưng dưới 12 tháng tuổi',
+      'Hạn sử dụng': '24 tháng kể từ ngày sản xuất',
+    },
+  },
+  {
+    id: 2,
+    name: 'Pâté mèo sốt cá ngừ & gà thượng hạng 85g',
+    price: 150000,
+    originalPrice: 180000,
+    categoryName: 'Thức ăn ướt & Pâté',
+    badge: 'Bestseller',
+    badgeType: 'hot',
+    rating: 4.9,
+    reviewsCount: 95,
+    image: 'https://images.unsplash.com/photo-1535930891776-0c2dfb7fda1a?w=800&auto=format&fit=crop&q=80',
+    description: 'Pâté tươi ngon được nấu từ phi lê cá ngừ đại dương và ức gà tươi hảo hạng, bổ sung khoáng chất Taurine giúp sáng mắt, mượt lông và hỗ trợ thận cho mèo mọi lứa tuổi.',
+    specs: {
+      'Thương hiệu': 'Whiskas Gourmet',
+      'Quy cách': 'Combo hộp 6 gói (85g/gói)',
+      'Thành phần': 'Cá ngừ 45%, ức gà 30%, thạch bổ sung Taurine',
+      'Hạn sử dụng': '18 tháng',
+    },
+  },
+  {
+    id: 3,
+    name: 'Đồ chơi xương gặm cao su mài răng sạch mảng bám',
+    price: 80000,
+    originalPrice: 110000,
+    categoryName: 'Đồ chơi thú cưng',
+    badge: 'Yêu thích',
+    badgeType: 'purebred',
+    rating: 4.8,
+    reviewsCount: 64,
+    image: 'https://images.unsplash.com/photo-1576201836106-db1758fd1c97?w=800&auto=format&fit=crop&q=80',
+    description: 'Đồ chơi gặm hình xương làm từ cao su tự nhiên cao cấp an toàn tuyệt đối, độ đàn hồi cực dai có gai massage nướu, giúp cún làm sạch cao răng và không cắn phá đồ đạc trong nhà.',
+    specs: {
+      'Chất liệu': 'Cao su nhiệt dẻo TPR không độc hại, không mùi',
+      'Kích thước': 'Dài 15cm x rộng 4.5cm',
+      'Tính năng': 'Chịu lực cắn mạnh, nổi trên mặt nước, có rãnh massage',
+      'Xuất xứ': 'Nhập khẩu cao cấp',
+    },
+  },
+  {
+    id: 4,
+    name: 'Vòng cổ chuông đồng thời trang phong cách Retro',
+    price: 120000,
+    originalPrice: 150000,
+    categoryName: 'Phụ kiện thời trang',
+    badge: 'Hot trend',
+    badgeType: 'new',
+    rating: 4.9,
+    reviewsCount: 78,
+    image: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=800&auto=format&fit=crop&q=80',
+    description: 'Vòng cổ vải dệt thủ công hoa văn vintage sang trọng, kèm chuông đồng leng keng giúp bạn dễ định vị bé cưng. Chốt kim loại bền bỉ có thể nới rộng vừa vặn cho cả chó và mèo.',
+    specs: {
+      'Chất liệu': 'Vải dệt Canvas cao cấp & khóa hợp kim chống gỉ',
+      'Kích cỡ': 'Chu vi cổ từ 19cm - 32cm (tự do điều chỉnh)',
+      'Đối tượng': 'Phù hợp cho mèo và các giống chó nhỏ/vừa',
+      'Phụ kiện kèm': 'Chuông đồng phong thủy mini siêu xinh',
+    },
+  },
+  {
+    id: 5,
+    name: 'Nệm êm nhung tuyết bồng bềnh chống trượt cao cấp',
+    price: 250000,
+    originalPrice: 320000,
+    categoryName: 'Ổ nệm & Đồ ngủ',
+    badge: '-22%',
+    badgeType: 'discount',
+    rating: 5.0,
+    reviewsCount: 110,
+    image: 'https://images.unsplash.com/photo-1541599540903-216a46ca1dc0?w=800&auto=format&fit=crop&q=80',
+    description: 'Nệm tròn lông nhung tuyết êm ái tựa đám mây với lõi bông PP đàn hồi cao cấp, đáy phủ hạt cao su chống trượt trên nền gạch men, mang lại giấc ngủ sâu và ấm áp bảo vệ xương khớp cho thú cưng.',
+    specs: {
+      'Chất liệu vỏ': 'Nhung tuyết siêu mềm mịn không rụng lông',
+      'Lõi đệm': 'Bông gòn tinh khiết PP 3D đàn hồi cao',
+      'Kích thước': 'Đường kính 50cm (phù hợp pet dưới 8kg)',
+      'Vệ sinh': 'Có thể giặt máy hoặc giặt tay tiện lợi',
+    },
+  },
+  {
+    id: 6,
+    name: 'Cần câu mèo đàn hồi gắn lông vũ tự nhiên & chuông',
+    price: 60000,
+    originalPrice: 90000,
+    categoryName: 'Đồ chơi mèo',
+    badge: 'Bán chạy',
+    badgeType: 'hot',
+    rating: 4.8,
+    reviewsCount: 52,
+    image: 'https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=800&auto=format&fit=crop&q=80',
+    description: 'Cần câu mèo dây thép dẻo trợ lực đàn hồi cực nhạy, đầu cần gắn chùm lông vũ tự nhiên bắt mắt và chuông kích hoạt bản năng săn mồi, giúp các bé mèo giải tỏa căng thẳng và vận động linh hoạt.',
+    specs: {
+      'Chiều dài': 'Cần 90cm, dây nối dài 60cm',
+      'Chất liệu': 'Sợi carbon dẻo uốn cong 360 độ & lông gà tự nhiên',
+      'Trọng lượng': 'Chỉ 45g, thao tác vung nhẹ nhàng',
+      'Công dụng': 'Tăng tương tác giữa sen và hoàng thượng',
+    },
+  },
+];
+
+// Hàm định dạng giá tiền VNĐ (vd: 150.000 VNĐ)
+export const formatPriceVND = (amount) => {
+  return (amount || 0).toLocaleString('vi-VN') + ' VNĐ';
+};
+
+export default function ProductList({
+  products,
+  onViewDetail,
+=======
 // Nhiệm vụ: San San - Quản lý hiển thị danh sách sản phẩm thú cưng & phụ kiện
 // Tích hợp: Hệ thống Tìm kiếm (SearchBar) & Bộ lọc (FilterSidebar) của Vân
 import { formatCurrency } from '../../data/products';
@@ -17,8 +148,20 @@ export default function ProductList({
   wishlist = [],
   onToggleWishlist,
   onAddToCart,
+main
   onSelectProduct,
+  onAddToCart,
 }) {
+ feature/danhsachsp
+  // Ưu tiên hiển thị 6 sản phẩm mẫu chuẩn theo yêu cầu
+  const displayProducts = SAMPLE_PRODUCTS;
+
+  // Xử lý khi nhấn nút Xem chi tiết: hỗ trợ cả onViewDetail và onSelectProduct (của App.jsx)
+  const handleDetailClick = (product) => {
+    if (onViewDetail) onViewDetail(product);
+    if (onSelectProduct) onSelectProduct(product);
+  };
+
   // Label danh mục đang chọn
   const getCategoryLabel = (cat) => {
     switch (cat) {
@@ -71,56 +214,72 @@ export default function ProductList({
     sortBy !== 'default' ||
     Boolean(searchTerm && searchTerm.trim());
 
+ main
   return (
     <section className="products-section" id="featured-products">
       <div className="container">
-        {/* Header danh sách & bộ lọc Tabs */}
-        <div className="section-header">
+        {/* Header danh sách sản phẩm */}
+        <div className="section-header" style={{ marginBottom: '28px' }}>
           <div>
             <div className="section-tagline">
-              <span>🐾</span> BST Thú Cưng Đáng Yêu Nhất
+              <span>🐾</span> Sản Phẩm Thú Cưng Chọn Lọc
             </div>
             <h2 className="section-main-heading">
-              Các Bé Chó & Mèo <span>Nổi Bật Hôm Nay</span>
+              Bộ Sưu Tập <span>Thú Cưng & Phụ Kiện Nổi Bật</span>
             </h2>
           </div>
-
-          {/* Tabs danh mục */}
-          {setActiveCategory && (
-            <div className="filter-tabs-wrapper">
-              <button
-                className={`tab-btn ${activeCategory === 'all' ? 'active' : ''}`}
-                onClick={() => setActiveCategory('all')}
-              >
-                Tất cả ({products.length})
-              </button>
-              <button
-                className={`tab-btn ${activeCategory === 'dog' ? 'active' : ''}`}
-                onClick={() => setActiveCategory('dog')}
-              >
-                🐶 Chó cảnh
-              </button>
-              <button
-                className={`tab-btn ${activeCategory === 'cat' ? 'active' : ''}`}
-                onClick={() => setActiveCategory('cat')}
-              >
-                🐱 Mèo cảnh
-              </button>
-              <button
-                className={`tab-btn ${activeCategory === 'food' ? 'active' : ''}`}
-                onClick={() => setActiveCategory('food')}
-              >
-                🥣 Thức ăn
-              </button>
-              <button
-                className={`tab-btn ${activeCategory === 'accessory' ? 'active' : ''}`}
-                onClick={() => setActiveCategory('accessory')}
-              >
-                🎀 Phụ kiện
-              </button>
-            </div>
-          )}
         </div>
+
+ feature/danhsachsp
+        {/* Grid danh sách 6 sản phẩm */}
+        <div
+          className="products-grid"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: '24px',
+          }}
+        >
+          {displayProducts.map((product) => (
+            <div
+              key={product.id}
+              className="product-card"
+              style={{
+                background: '#ffffff',
+                borderRadius: '20px',
+                border: '1px solid #f1f5f9',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              }}
+            >
+              {/* Khung ảnh: Ép kích thước khung ảnh height: 200px, object-fit: cover */}
+              <div
+                className="product-img-box"
+                style={{
+                  height: '200px',
+                  width: '100%',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  backgroundColor: '#f8fafc',
+                }}
+                onClick={() => handleDetailClick(product)}
+                title="Bấm để xem chi tiết"
+              >
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  style={{
+                    width: '100%',
+                    height: '200px',
+                    objectFit: 'cover',
+                    display: 'block',
+                    transition: 'transform 0.3s ease',
+                  }}
+                />
 
         {/* Thanh trạng thái bộ lọc đang áp dụng (Active Filters Bar) */}
         {isFiltered && (
@@ -240,97 +399,147 @@ export default function ProductList({
           <div className="products-grid">
             {products.map((product) => {
               const isFavorite = wishlist.includes(product.id);
+ main
 
-              return (
-                <div key={product.id} className="product-card">
-                  {/* Ảnh sản phẩm */}
+                {/* Badge trạng thái */}
+                {product.badge && (
                   <div
-                    className="product-img-box"
-                    onClick={() => onSelectProduct && onSelectProduct(product)}
-                    style={{ cursor: 'pointer' }}
-                    title="Click xem chi tiết bé này"
+                    style={{
+                      position: 'absolute',
+                      top: '12px',
+                      left: '12px',
+                      background: 'linear-gradient(135deg, #ff6b35 0%, #ff8c5a 100%)',
+                      color: '#ffffff',
+                      padding: '4px 10px',
+                      borderRadius: '50px',
+                      fontSize: '0.75rem',
+                      fontWeight: '700',
+                      boxShadow: '0 2px 8px rgba(255,107,53,0.3)',
+                    }}
                   >
-                    <img src={product.image} alt={product.name} className="product-img" />
-
-                    {/* Badge trạng thái */}
-                    <div className="badge-tag-wrap">
-                      <span className={`badge-pill-status ${product.badgeType || 'discount'}`}>
-                        {product.badge}
-                      </span>
-                    </div>
-
-                    {/* Nút thả tim */}
-                    <button
-                      className={`wishlist-btn ${isFavorite ? 'active' : ''}`}
-                      title={isFavorite ? 'Bỏ thích' : 'Yêu thích'}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (onToggleWishlist) onToggleWishlist(product.id);
-                      }}
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill={isFavorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
-                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                      </svg>
-                    </button>
+                    {product.badge}
                   </div>
+                )}
+              </div>
 
-                  {/* Thông tin sản phẩm */}
-                  <div className="product-content">
-                    <div className="product-meta-row">
-                      <span className="product-category-name">{product.categoryName}</span>
-                      <div className="product-rating">
-                        <span>⭐</span>
-                        <span>{product.rating}</span>
-                        <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>({product.reviewsCount})</span>
-                      </div>
-                    </div>
-
-                    <h3
-                      className="product-name"
-                      title={product.name}
-                      onClick={() => onSelectProduct && onSelectProduct(product)}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      {product.name}
-                    </h3>
-
-                    {/* Tags thông số */}
-                    <div className="product-tags-row">
-                      {product.tags &&
-                        product.tags.map((tag, idx) => (
-                          <span key={idx} className="tag-spec">
-                            {tag}
-                          </span>
-                        ))}
-                    </div>
-
-                    {/* Giá & nút thêm vào giỏ */}
-                    <div className="product-bottom-row">
-                      <div className="price-box">
-                        <span className="price-current">{formatCurrency(product.price)}</span>
-                        {product.originalPrice > product.price && (
-                          <span className="price-original">{formatCurrency(product.originalPrice)}</span>
-                        )}
-                      </div>
-
-                      <button
-                        className="add-cart-btn"
-                        title="Thêm vào giỏ hàng"
-                        onClick={() => onAddToCart && onAddToCart(product)}
-                      >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="12" y1="5" x2="12" y2="19"></line>
-                          <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                        <span>Thêm vào giỏ</span>
-                      </button>
-                    </div>
+              {/* Nội dung thông tin sản phẩm */}
+              <div
+                className="product-content"
+                style={{
+                  padding: '18px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  flexGrow: 1,
+                }}
+              >
+                {/* Danh mục & Đánh giá */}
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '8px',
+                    fontSize: '0.8rem',
+                  }}
+                >
+                  <span style={{ color: '#ff6b35', fontWeight: '700' }}>
+                    {product.categoryName}
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#f59e0b', fontWeight: '700' }}>
+                    <span>⭐</span>
+                    <span>{product.rating}</span>
+                    <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>({product.reviewsCount})</span>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
+
+                {/* Tên sản phẩm */}
+                <h3
+                  className="product-name"
+                  onClick={() => handleDetailClick(product)}
+                  style={{
+                    fontSize: '1.05rem',
+                    fontWeight: '700',
+                    color: '#1e293b',
+                    marginBottom: '12px',
+                    cursor: 'pointer',
+                    lineHeight: '1.4',
+                    minHeight: '2.8em',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  }}
+                  title={product.name}
+                >
+                  {product.name}
+                </h3>
+
+                {/* Giá tiền định dạng VNĐ */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'baseline',
+                    gap: '10px',
+                    marginBottom: '16px',
+                    marginTop: 'auto',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '1.25rem',
+                      fontWeight: '800',
+                      color: '#ff6b35',
+                    }}
+                  >
+                    {formatPriceVND(product.price)}
+                  </span>
+                  {product.originalPrice && product.originalPrice > product.price && (
+                    <span
+                      style={{
+                        fontSize: '0.85rem',
+                        color: '#94a3b8',
+                        textDecoration: 'line-through',
+                      }}
+                    >
+                      {formatPriceVND(product.originalPrice)}
+                    </span>
+                  )}
+                </div>
+
+                {/* 2 nút thao tác: "Xem chi tiết" và "Thêm vào giỏ" */}
+                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                  <button
+                    className="btn-primary-cta"
+                    onClick={() => handleDetailClick(product)}
+                    style={{
+                      flex: 1,
+                      padding: '10px 8px',
+                      fontSize: '0.88rem',
+                      borderRadius: '12px',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Xem chi tiết
+                  </button>
+
+                  <button
+                    className="btn-secondary-cta"
+                    onClick={() => onAddToCart && onAddToCart(product)}
+                    style={{
+                      flex: 1,
+                      padding: '10px 8px',
+                      fontSize: '0.88rem',
+                      borderRadius: '12px',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Thêm vào giỏ
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
