@@ -1,7 +1,8 @@
 // src/pages/Products/ProductList.jsx
- feature/danhsachsp
 // Quản lý hiển thị danh sách sản phẩm thú cưng & phụ kiện (Nhiệm vụ: San San)
+// Tích hợp: Hệ thống Tìm kiếm (SearchBar) & Bộ lọc (FilterSidebar) của Vân
 import React from 'react';
+import { formatCurrency } from '../../data/products';
 
 // Danh sách 6 sản phẩm thú cưng mẫu với hình ảnh thật nét từ Unsplash
 export const SAMPLE_PRODUCTS = [
@@ -128,14 +129,6 @@ export const formatPriceVND = (amount) => {
 
 export default function ProductList({
   products,
-  onViewDetail,
-=======
-// Nhiệm vụ: San San - Quản lý hiển thị danh sách sản phẩm thú cưng & phụ kiện
-// Tích hợp: Hệ thống Tìm kiếm (SearchBar) & Bộ lọc (FilterSidebar) của Vân
-import { formatCurrency } from '../../data/products';
-
-export default function ProductList({
-  products = [],
   activeCategory = 'all',
   setActiveCategory,
   searchTerm = '',
@@ -148,15 +141,13 @@ export default function ProductList({
   wishlist = [],
   onToggleWishlist,
   onAddToCart,
-main
   onSelectProduct,
-  onAddToCart,
+  onViewDetail,
 }) {
- feature/danhsachsp
-  // Ưu tiên hiển thị 6 sản phẩm mẫu chuẩn theo yêu cầu
-  const displayProducts = SAMPLE_PRODUCTS;
+  // Ưu tiên danh sách sản phẩm được truyền vào (nếu có), nếu không có thì fallback sang SAMPLE_PRODUCTS
+  const displayProducts = Array.isArray(products) && products.length > 0 ? products : (products ? [] : SAMPLE_PRODUCTS);
 
-  // Xử lý khi nhấn nút Xem chi tiết: hỗ trợ cả onViewDetail và onSelectProduct (của App.jsx)
+  // Xử lý khi nhấn nút Xem chi tiết: hỗ trợ cả onViewDetail và onSelectProduct
   const handleDetailClick = (product) => {
     if (onViewDetail) onViewDetail(product);
     if (onSelectProduct) onSelectProduct(product);
@@ -214,7 +205,6 @@ main
     sortBy !== 'default' ||
     Boolean(searchTerm && searchTerm.trim());
 
- main
   return (
     <section className="products-section" id="featured-products">
       <div className="container">
@@ -230,63 +220,12 @@ main
           </div>
         </div>
 
- feature/danhsachsp
-        {/* Grid danh sách 6 sản phẩm */}
-        <div
-          className="products-grid"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: '24px',
-          }}
-        >
-          {displayProducts.map((product) => (
-            <div
-              key={product.id}
-              className="product-card"
-              style={{
-                background: '#ffffff',
-                borderRadius: '20px',
-                border: '1px solid #f1f5f9',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-              }}
-            >
-              {/* Khung ảnh: Ép kích thước khung ảnh height: 200px, object-fit: cover */}
-              <div
-                className="product-img-box"
-                style={{
-                  height: '200px',
-                  width: '100%',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  cursor: 'pointer',
-                  backgroundColor: '#f8fafc',
-                }}
-                onClick={() => handleDetailClick(product)}
-                title="Bấm để xem chi tiết"
-              >
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  style={{
-                    width: '100%',
-                    height: '200px',
-                    objectFit: 'cover',
-                    display: 'block',
-                    transition: 'transform 0.3s ease',
-                  }}
-                />
-
         {/* Thanh trạng thái bộ lọc đang áp dụng (Active Filters Bar) */}
         {isFiltered && (
           <div className="active-filters-bar">
             <div className="active-filters-info">
               <span className="results-count-badge">
-                🔍 Tìm thấy <strong>{products.length}</strong> sản phẩm phù hợp
+                🔍 Tìm thấy <strong>{displayProducts.length}</strong> sản phẩm phù hợp
               </span>
 
               <div className="active-filter-chips">
@@ -375,7 +314,7 @@ main
         )}
 
         {/* Grid sản phẩm hoặc Trạng thái rỗng */}
-        {products.length === 0 ? (
+        {displayProducts.length === 0 ? (
           <div className="empty-products-state">
             <div className="empty-icon-circle">🔍</div>
             <h3 className="empty-title">Không tìm thấy sản phẩm nào!</h3>
@@ -396,150 +335,237 @@ main
             ) : null}
           </div>
         ) : (
-          <div className="products-grid">
-            {products.map((product) => {
-              const isFavorite = wishlist.includes(product.id);
- main
+          <div
+            className="products-grid"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+              gap: '24px',
+            }}
+          >
+            {displayProducts.map((product) => {
+              const isFavorite = wishlist && wishlist.includes(product.id);
 
-                {/* Badge trạng thái */}
-                {product.badge && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '12px',
-                      left: '12px',
-                      background: 'linear-gradient(135deg, #ff6b35 0%, #ff8c5a 100%)',
-                      color: '#ffffff',
-                      padding: '4px 10px',
-                      borderRadius: '50px',
-                      fontSize: '0.75rem',
-                      fontWeight: '700',
-                      boxShadow: '0 2px 8px rgba(255,107,53,0.3)',
-                    }}
-                  >
-                    {product.badge}
-                  </div>
-                )}
-              </div>
-
-              {/* Nội dung thông tin sản phẩm */}
-              <div
-                className="product-content"
-                style={{
-                  padding: '18px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  flexGrow: 1,
-                }}
-              >
-                {/* Danh mục & Đánh giá */}
+              return (
                 <div
+                  key={product.id}
+                  className="product-card"
                   style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '8px',
-                    fontSize: '0.8rem',
-                  }}
-                >
-                  <span style={{ color: '#ff6b35', fontWeight: '700' }}>
-                    {product.categoryName}
-                  </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#f59e0b', fontWeight: '700' }}>
-                    <span>⭐</span>
-                    <span>{product.rating}</span>
-                    <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>({product.reviewsCount})</span>
-                  </div>
-                </div>
-
-                {/* Tên sản phẩm */}
-                <h3
-                  className="product-name"
-                  onClick={() => handleDetailClick(product)}
-                  style={{
-                    fontSize: '1.05rem',
-                    fontWeight: '700',
-                    color: '#1e293b',
-                    marginBottom: '12px',
-                    cursor: 'pointer',
-                    lineHeight: '1.4',
-                    minHeight: '2.8em',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
+                    background: '#ffffff',
+                    borderRadius: '20px',
+                    border: '1px solid #f1f5f9',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
                     overflow: 'hidden',
-                  }}
-                  title={product.name}
-                >
-                  {product.name}
-                </h3>
-
-                {/* Giá tiền định dạng VNĐ */}
-                <div
-                  style={{
                     display: 'flex',
-                    alignItems: 'baseline',
-                    gap: '10px',
-                    marginBottom: '16px',
-                    marginTop: 'auto',
+                    flexDirection: 'column',
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                   }}
                 >
-                  <span
+                  {/* Khung ảnh: Chiều cao 200px, object-fit cover */}
+                  <div
+                    className="product-img-box"
                     style={{
-                      fontSize: '1.25rem',
-                      fontWeight: '800',
-                      color: '#ff6b35',
+                      height: '200px',
+                      width: '100%',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      backgroundColor: '#f8fafc',
+                    }}
+                    onClick={() => handleDetailClick(product)}
+                    title="Bấm để xem chi tiết"
+                  >
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      style={{
+                        width: '100%',
+                        height: '200px',
+                        objectFit: 'cover',
+                        display: 'block',
+                        transition: 'transform 0.3s ease',
+                      }}
+                    />
+
+                    {/* Badge trạng thái */}
+                    {product.badge && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '12px',
+                          left: '12px',
+                          background: 'linear-gradient(135deg, #ff6b35 0%, #ff8c5a 100%)',
+                          color: '#ffffff',
+                          padding: '4px 10px',
+                          borderRadius: '50px',
+                          fontSize: '0.75rem',
+                          fontWeight: '700',
+                          boxShadow: '0 2px 8px rgba(255,107,53,0.3)',
+                          zIndex: 2,
+                        }}
+                      >
+                        {product.badge}
+                      </div>
+                    )}
+
+                    {/* Nút thả tim (Wishlist) */}
+                    {onToggleWishlist && (
+                      <button
+                        className={`wishlist-btn ${isFavorite ? 'active' : ''}`}
+                        title={isFavorite ? 'Bỏ thích' : 'Yêu thích'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleWishlist(product.id);
+                        }}
+                      >
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill={isFavorite ? 'currentColor' : 'none'}
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Nội dung thông tin sản phẩm */}
+                  <div
+                    className="product-content"
+                    style={{
+                      padding: '18px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      flexGrow: 1,
                     }}
                   >
-                    {formatPriceVND(product.price)}
-                  </span>
-                  {product.originalPrice && product.originalPrice > product.price && (
-                    <span
+                    {/* Danh mục & Đánh giá */}
+                    <div
                       style={{
-                        fontSize: '0.85rem',
-                        color: '#94a3b8',
-                        textDecoration: 'line-through',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '8px',
+                        fontSize: '0.8rem',
                       }}
                     >
-                      {formatPriceVND(product.originalPrice)}
-                    </span>
-                  )}
-                </div>
+                      <span style={{ color: '#ff6b35', fontWeight: '700' }}>
+                        {product.categoryName}
+                      </span>
+                      {product.rating !== undefined && (
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            color: '#f59e0b',
+                            fontWeight: '700',
+                          }}
+                        >
+                          <span>⭐</span>
+                          <span>{product.rating}</span>
+                          {product.reviewsCount !== undefined && (
+                            <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>
+                              ({product.reviewsCount})
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
 
-                {/* 2 nút thao tác: "Xem chi tiết" và "Thêm vào giỏ" */}
-                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                  <button
-                    className="btn-primary-cta"
-                    onClick={() => handleDetailClick(product)}
-                    style={{
-                      flex: 1,
-                      padding: '10px 8px',
-                      fontSize: '0.88rem',
-                      borderRadius: '12px',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    Xem chi tiết
-                  </button>
+                    {/* Tên sản phẩm */}
+                    <h3
+                      className="product-name"
+                      onClick={() => handleDetailClick(product)}
+                      style={{
+                        fontSize: '1.05rem',
+                        fontWeight: '700',
+                        color: '#1e293b',
+                        marginBottom: '12px',
+                        cursor: 'pointer',
+                        lineHeight: '1.4',
+                        minHeight: '2.8em',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                      title={product.name}
+                    >
+                      {product.name}
+                    </h3>
 
-                  <button
-                    className="btn-secondary-cta"
-                    onClick={() => onAddToCart && onAddToCart(product)}
-                    style={{
-                      flex: 1,
-                      padding: '10px 8px',
-                      fontSize: '0.88rem',
-                      borderRadius: '12px',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    Thêm vào giỏ
-                  </button>
+                    {/* Giá tiền */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'baseline',
+                        gap: '10px',
+                        marginBottom: '16px',
+                        marginTop: 'auto',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: '1.25rem',
+                          fontWeight: '800',
+                          color: '#ff6b35',
+                        }}
+                      >
+                        {formatPriceVND(product.price)}
+                      </span>
+                      {product.originalPrice && product.originalPrice > product.price && (
+                        <span
+                          style={{
+                            fontSize: '0.85rem',
+                            color: '#94a3b8',
+                            textDecoration: 'line-through',
+                          }}
+                        >
+                          {formatPriceVND(product.originalPrice)}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* 2 nút thao tác: "Xem chi tiết" và "Thêm vào giỏ" */}
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                      <button
+                        className="btn-primary-cta"
+                        onClick={() => handleDetailClick(product)}
+                        style={{
+                          flex: 1,
+                          padding: '10px 8px',
+                          fontSize: '0.88rem',
+                          borderRadius: '12px',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        Xem chi tiết
+                      </button>
+
+                      <button
+                        className="btn-secondary-cta"
+                        onClick={() => onAddToCart && onAddToCart(product)}
+                        style={{
+                          flex: 1,
+                          padding: '10px 8px',
+                          fontSize: '0.88rem',
+                          borderRadius: '12px',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        Thêm vào giỏ
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </section>
   );
