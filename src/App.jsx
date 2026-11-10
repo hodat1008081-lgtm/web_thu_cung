@@ -45,8 +45,7 @@ import TrackingTimeline from './pages/OrderTracking/TrackingTimeline';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 
 // 10. Phân hệ Virtual Pet (Đạt & Vân)
-import PetAvatar from './components/VirtualPet/PetAvatar';
-import LevelSystem from './components/VirtualPet/LevelSystem';
+import VirtualPetDashboard from './components/VirtualPet/VirtualPetDashboard';
 
 // 11. Phân hệ Size Advisor (Trâm & San San)
 import SizeCalculator from './components/SizeAdvisor/SizeCalculator';
@@ -666,23 +665,20 @@ export default function App() {
 
       {/* VIEW 6: NUÔI THÚ CƯNG ẢO (Đạt & Vân) */}
       {currentTab === 'virtual-pet' && (
-        <div className="container" style={{ padding: '40px 20px 80px' }}>
-          <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 36px' }}>
-            <div className="section-tagline" style={{ justifyContent: 'center' }}>
-              <span>🎮</span> Gamification PetCare Joy
-            </div>
-            <h2 className="section-main-heading">
-              Góc Nuôi <span>Thú Cưng Ảo Nhận Voucher</span>
-            </h2>
-            <p style={{ color: '#64748b', marginTop: '10px' }}>
-              Chăm sóc bé cún/mèo ảo hàng ngày để tích lũy điểm kinh nghiệm và đổi lấy các voucher giảm giá khi mua hàng thực tế!
-            </p>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', maxWidth: '960px', margin: '0 auto' }}>
-            <PetAvatar petState={virtualPet} onAction={handleVirtualPetAction} />
-            <LevelSystem petState={virtualPet} onClaimVoucher={handleClaimVoucher} />
-          </div>
+        <div className="container" style={{ padding: '20px 20px 80px' }}>
+          <VirtualPetDashboard
+            petState={virtualPet}
+            setPetState={setVirtualPet}
+            onClaimVoucher={handleClaimVoucher}
+            onNavigateToShop={(actionType) => {
+              if (actionType === 'cart') {
+                setIsCartOpen(true);
+              } else {
+                setCurrentTab('home');
+                scrollToProducts();
+              }
+            }}
+          />
         </div>
       )}
 
