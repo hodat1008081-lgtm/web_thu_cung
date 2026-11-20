@@ -1,8 +1,8 @@
 // src/pages/Products/ProductList.jsx
 // Quản lý hiển thị danh sách sản phẩm thú cưng & phụ kiện (Nhiệm vụ: San San)
 // Tích hợp: Hệ thống Tìm kiếm (SearchBar) & Bộ lọc (FilterSidebar) của Vân
-import React from 'react';
-import { formatCurrency } from '../../data/products';
+import { useMemo } from 'react';
+import { ACCESSORY_PRODUCTS } from './productSizeData';
 
 // Danh sách 6 sản phẩm thú cưng mẫu với hình ảnh thật nét từ Unsplash
 export const SAMPLE_PRODUCTS = [
@@ -144,8 +144,26 @@ export default function ProductList({
   onSelectProduct,
   onViewDetail,
 }) {
-  // Ưu tiên danh sách sản phẩm được truyền vào (nếu có), nếu không có thì fallback sang SAMPLE_PRODUCTS
-  const displayProducts = Array.isArray(products) && products.length > 0 ? products : (products ? [] : SAMPLE_PRODUCTS);
+  // Kết hợp danh sách sản phẩm với các sản phẩm phụ kiện thú cưng có dữ liệu size chuẩn hóa
+  const displayProducts = useMemo(() => {
+    const baseList = Array.isArray(products) && products.length > 0 ? products : (products ? [] : SAMPLE_PRODUCTS);
+    const existingNames = new Set(baseList.map((p) => (p.name ? p.name.toLowerCase() : String(p.id))));
+    const additional = ACCESSORY_PRODUCTS.filter((p) => !existingNames.has(p.name.toLowerCase()));
+
+    const filteredAdditional = additional.filter((prod) => {
+      const matchCat = activeCategory === 'all' || prod.category === activeCategory;
+      const cleanSearch = (searchTerm || '').toLowerCase().trim();
+      let matchSearch = true;
+      if (cleanSearch) {
+        matchSearch =
+          prod.name.toLowerCase().includes(cleanSearch) ||
+          (prod.categoryName && prod.categoryName.toLowerCase().includes(cleanSearch));
+      }
+      return matchCat && matchSearch;
+    });
+
+    return [...baseList, ...filteredAdditional];
+  }, [products, activeCategory, searchTerm]);
 
   // Xử lý khi nhấn nút Xem chi tiết: hỗ trợ cả onViewDetail và onSelectProduct
   const handleDetailClick = (product) => {
