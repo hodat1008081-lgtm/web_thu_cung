@@ -1,6 +1,6 @@
 // src/pages/Auth/Register.jsx
-// Nhiệm vụ: Trâm - Xây dựng phân hệ Đăng ký tài khoản thành viên
-import React, { useState } from 'react';
+// Nhiệm vụ: Trâm & Nhóm - Phân hệ Đăng ký tài khoản thành viên (Mặc định role: "user")
+import { useState } from 'react';
 
 export default function Register({ onRegisterSuccess, onSwitchToLogin, onClose }) {
   const [fullName, setFullName] = useState('');
@@ -9,23 +9,38 @@ export default function Register({ onRegisterSuccess, onSwitchToLogin, onClose }
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setErrorMessage('');
+
     if (password !== confirmPassword) {
-      alert('Mật khẩu xác nhận không khớp! Vui lòng kiểm tra lại.');
+      setErrorMessage('Mật khẩu xác nhận không khớp! Vui lòng kiểm tra lại.');
+      return;
+    }
+    if (password.length < 6) {
+      setErrorMessage('Mật khẩu phải có tối thiểu 6 ký tự!');
       return;
     }
     if (!agreeTerms) {
-      alert('Vui lòng đồng ý với điều khoản sử dụng của PetCare Joy!');
+      setErrorMessage('Vui lòng đồng ý với điều khoản sử dụng của PetCare Joy!');
       return;
     }
+
+    // Yêu cầu đề bài: "Khi người dùng đăng ký tài khoản mới qua Register, mặc định lưu thông tin người dùng với role: 'user'"
+    const newUser = {
+      id: `USR-${Date.now()}`,
+      name: fullName.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone.trim(),
+      password,
+      role: 'user', // Mặc định role: "user" theo yêu cầu 1
+      createdAt: new Date().toLocaleDateString('vi-VN'),
+    };
+
     if (onRegisterSuccess) {
-      onRegisterSuccess({
-        name: fullName,
-        email,
-        phone,
-      });
+      onRegisterSuccess(newUser);
     }
   };
 
@@ -56,9 +71,26 @@ export default function Register({ onRegisterSuccess, onSwitchToLogin, onClose }
         Tạo tài khoản thành viên để nhận voucher <strong>10%</strong> và tích điểm đổi quà
       </p>
 
+      {errorMessage && (
+        <div
+          style={{
+            background: '#fef2f2',
+            color: '#dc2626',
+            border: '1px solid #fecaca',
+            padding: '8px 12px',
+            borderRadius: '8px',
+            fontSize: '0.82rem',
+            marginBottom: '16px',
+            fontWeight: '600',
+          }}
+        >
+          ⚠️ {errorMessage}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label className="form-label">Họ và tên của bạn</label>
+          <label className="form-label">Họ và tên của bạn *</label>
           <input
             type="text"
             required
@@ -71,7 +103,7 @@ export default function Register({ onRegisterSuccess, onSwitchToLogin, onClose }
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
           <div className="form-group">
-            <label className="form-label">Email</label>
+            <label className="form-label">Email *</label>
             <input
               type="email"
               required
@@ -82,7 +114,7 @@ export default function Register({ onRegisterSuccess, onSwitchToLogin, onClose }
             />
           </div>
           <div className="form-group">
-            <label className="form-label">Số điện thoại</label>
+            <label className="form-label">Số điện thoại *</label>
             <input
               type="tel"
               required
@@ -96,18 +128,18 @@ export default function Register({ onRegisterSuccess, onSwitchToLogin, onClose }
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
           <div className="form-group">
-            <label className="form-label">Mật khẩu</label>
+            <label className="form-label">Mật khẩu *</label>
             <input
               type="password"
               required
               className="form-input"
-              placeholder="Ít nhất 6 ký tự"
+              placeholder="Tối thiểu 6 ký tự"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
           <div className="form-group">
-            <label className="form-label">Xác nhận mật khẩu</label>
+            <label className="form-label">Xác nhận mật khẩu *</label>
             <input
               type="password"
               required
@@ -117,6 +149,27 @@ export default function Register({ onRegisterSuccess, onSwitchToLogin, onClose }
               onChange={(e) => setConfirmPassword(e.target.value)}
             />
           </div>
+        </div>
+
+        {/* Thông tin vai trò mặc định */}
+        <div
+          style={{
+            background: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: '10px',
+            padding: '8px 12px',
+            fontSize: '0.78rem',
+            color: '#64748b',
+            marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <span>🛡️</span>
+          <span>
+            Tài khoản mới được tạo với vai trò: <strong style={{ color: '#ff6b35' }}>Khách hàng (User)</strong>
+          </span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '18px' }}>

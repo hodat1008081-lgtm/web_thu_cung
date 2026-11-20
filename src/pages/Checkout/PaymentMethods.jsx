@@ -48,14 +48,29 @@ export default function PaymentMethods({
       return;
     }
 
+    const selectedOption = paymentOptions.find((o) => o.id === selectedMethod);
+
+    // Yêu cầu 2: Lưu đầy đủ thông tin: Mã đơn, Tên khách, SĐT, Địa chỉ, Danh sách sản phẩm, Tổng tiền, Trạng thái: "Chờ xác nhận"
     const orderData = {
+      id: `PET-${Date.now().toString().slice(-6)}`,
       orderId: `PET-${Date.now().toString().slice(-6)}`,
       createdAt: new Date().toLocaleTimeString('vi-VN') + ' ' + new Date().toLocaleDateString('vi-VN'),
-      customer: customerInfo,
+      customerName: customerInfo.fullName || 'Khách hàng PetCare',
+      phone: customerInfo.phone || '0988 xxx xxx',
+      deliveryAddress: customerInfo.address
+        ? `${customerInfo.address}${customerInfo.city ? `, ${customerInfo.city}` : ''}`
+        : 'Địa chỉ nhận hàng',
+      note: customerInfo.note || '',
       items: cartItems,
+      petName: cartItems.map((item) => item.name).join(', '),
       totalAmount: finalTotal,
-      paymentMethod: selectedMethod,
-      status: 'confirmed',
+      totalPrice: finalTotal,
+      paymentMethod: selectedOption?.title || 'COD Tiền mặt',
+      status: 'pending', // Mặc định Trạng thái: "Chờ xác nhận" theo yêu cầu 2
+      estimatedArrival: 'Dự kiến sau khi Admin phê duyệt đơn hàng',
+      driverName: 'Nguyễn Văn Hùng (Tài xế chuyên dụng PetCare)',
+      driverPhone: '0912 345 678',
+      driverVehicle: 'Xe ô tô bán tải chuyên dụng máy lạnh (Biển số: 51A-987.65)',
     };
 
     if (onConfirmOrder) {
