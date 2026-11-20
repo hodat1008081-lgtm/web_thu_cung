@@ -296,7 +296,7 @@ export default function Header({
                 onClick={() => onNavigateTab && onNavigateTab('size-advisor')}
                 style={{ color: '#0ea5e9' }}
               >
-                📏 Tư Vấn Size Chuồng
+                📏 Tư Vấn Size Phụ Kiện
               </button>
             </li>
             <li>
