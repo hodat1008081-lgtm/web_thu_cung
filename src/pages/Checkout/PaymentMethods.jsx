@@ -764,7 +764,7 @@ export default function PaymentMethods({
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.92rem' }}>
-          <span style={{ color: '#64748b' }}>Phí vận chuyển chuồng điều hòa:</span>
+          <span style={{ color: '#64748b' }}>Phí vận chuyển giao tận nhà:</span>
           <strong style={{ color: finalShippingFee === 0 ? '#10b981' : '#1e293b' }}>
             {finalShippingFee === 0 ? 'MIỄN PHÍ' : formatCurrency(finalShippingFee)}
           </strong>
