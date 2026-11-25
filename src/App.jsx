@@ -10,11 +10,12 @@
 // - Vương: Tra cứu đơn hàng (TrackingTimeline) & Đề xuất (BehaviorAnalysis)
 // ==============================================================================
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import './App.css';
 
-// 1. Data dùng chung
+// 1. Data dùng chung & Dữ liệu Khách / Admin
 import { INITIAL_PRODUCTS } from './data/products';
+import { INITIAL_USERS, INITIAL_ORDERS } from './data/mockData';
 
 // 2. Header & Footer
 import Header from './components/Header/Header';
@@ -45,8 +46,7 @@ import TrackingTimeline from './pages/OrderTracking/TrackingTimeline';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 
 // 10. Phân hệ Virtual Pet (Đạt & Vân)
-import PetAvatar from './components/VirtualPet/PetAvatar';
-import LevelSystem from './components/VirtualPet/LevelSystem';
+import VirtualPetDashboard from './components/VirtualPet/VirtualPetDashboard';
 
 // 11. Phân hệ Size Advisor (Trâm & San San)
 import SizeCalculator from './components/SizeAdvisor/SizeCalculator';
@@ -86,6 +86,76 @@ export default function App() {
 
   // Thông báo toast
   const [toastMessage, setToastMessage] = useState(null);
+
+  // =========================================================================
+  // Phân hệ Quản lý Tài khoản & Phân quyền (Yêu cầu 1)
+  // =========================================================================
+  const [users, setUsers] = useState(() => {
+    try {
+      const saved = localStorage.getItem('petcare_users');
+      return saved ? JSON.parse(saved) : INITIAL_USERS;
+    } catch {
+      return INITIAL_USERS;
+    }
+  });
+
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('petcare_current_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  // =========================================================================
+  // Phân hệ Quản lý Đơn hàng Dùng chung Khách & Admin (Yêu cầu 2)
+  // =========================================================================
+  const [orders, setOrders] = useState(() => {
+    try {
+      const saved = localStorage.getItem('petcare_orders');
+      return saved ? JSON.parse(saved) : INITIAL_ORDERS;
+    } catch {
+      return INITIAL_ORDERS;
+    }
+  });
+
+  // Đồng bộ localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('petcare_users', JSON.stringify(users));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [users]);
+
+  useEffect(() => {
+    try {
+      if (currentUser) {
+        localStorage.setItem('petcare_current_user', JSON.stringify(currentUser));
+      } else {
+        localStorage.removeItem('petcare_current_user');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('petcare_orders', JSON.stringify(orders));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [orders]);
+
+  // Yêu cầu 1: Nếu user thường cố tình vào tab admin, tự động điều hướng về trang chủ
+  useEffect(() => {
+    if (currentTab === 'admin' && currentUser?.role !== 'admin') {
+      showToast('⛔ Bạn không có quyền truy cập Trang Quản Trị! (Chỉ dành cho Admin)');
+      setCurrentTab('home');
+    }
+  }, [currentTab, currentUser]);
 
   // Modals
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -196,13 +266,45 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Xác nhận đặt hàng từ PaymentMethods
+  // Xác nhận đặt hàng từ PaymentMethods (Yêu cầu 2: Lưu đầy đủ thông tin, trạng thái "Chờ xác nhận")
   const handleConfirmOrder = (orderData) => {
-    setCurrentOrderTrackingId(orderData.orderId);
+    const orderId = orderData.id || orderData.orderId || `PET-${Date.now().toString().slice(-6)}`;
+    const newOrder = {
+      ...orderData,
+      id: orderId,
+      status: 'pending', // Mặc định Trạng thái: "Chờ xác nhận" theo yêu cầu 2
+    };
+
+    setOrders((prev) => [newOrder, ...prev]);
+    setCurrentOrderTrackingId(orderId);
     setCartItems([]);
-    showToast(`🎉 Đặt hàng thành công! Mã đơn: ${orderData.orderId}`);
+    showToast(`🎉 Đặt hàng thành công! Mã đơn: ${orderId} (Trạng thái: Chờ xác nhận)`);
     setCurrentTab('tracking');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Admin cập nhật trạng thái đơn hàng (Yêu cầu 2: Đồng bộ trực tiếp với khách)
+  const handleUpdateOrderStatus = (orderId, newStatus) => {
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+    );
+
+    const statusLabels = {
+      pending: 'Chờ xác nhận',
+      shipping: 'Đang giao hàng',
+      completed: 'Hoàn thành',
+      cancelled: 'Đã hủy',
+    };
+    showToast(`✅ Quản trị viên: Đơn ${orderId} đã chuyển sang "${statusLabels[newStatus] || newStatus}"`);
+  };
+
+  // Đăng xuất tài khoản
+  const handleLogout = () => {
+    setCurrentUser(null);
+    showToast('👋 Đã đăng xuất tài khoản.');
+    if (currentTab === 'admin') {
+      setCurrentTab('home');
+    }
   };
 
   // Xử lý tương tác thú cưng ảo (Virtual Pet)
@@ -352,7 +454,16 @@ export default function App() {
         activeCategory={activeCategory}
         setActiveCategory={setActiveCategory}
         onOpenServiceModal={() => setIsServiceModalOpen(true)}
+        currentUser={currentUser}
+        onLogout={handleLogout}
         onNavigateTab={(tab) => {
+          // Yêu cầu 1: Nếu user thường cố tình vào đường dẫn/tab admin, tự động điều hướng về trang chủ
+          if (tab === 'admin' && currentUser?.role !== 'admin') {
+            showToast('⛔ Bạn không có quyền truy cập Trang Quản Trị! (Chỉ dành cho Admin)');
+            setCurrentTab('home');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+          }
           setCurrentTab(tab);
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
@@ -649,40 +760,58 @@ export default function App() {
         </div>
       )}
 
-      {/* VIEW 4: TRA CỨU ĐƠN HÀNG (Vương) */}
+      {/* VIEW 4: TRA CỨU ĐƠN HÀNG (Vương & Đồng bộ Admin) */}
       {currentTab === 'tracking' && (
-        <TrackingTimeline initialOrderId={currentOrderTrackingId} />
+        <TrackingTimeline
+          initialOrderId={currentOrderTrackingId}
+          orders={orders}
+        />
       )}
 
-      {/* VIEW 5: QUẢN TRỊ ADMIN (Đạt) */}
+      {/* VIEW 5: QUẢN TRỊ ADMIN (Đạt & Phân quyền Role: Admin) */}
       {currentTab === 'admin' && (
-        <AdminDashboard
-          products={products}
-          onAddProduct={handleAddProductAdmin}
-          onDeleteProduct={handleDeleteProductAdmin}
-          onBackToStore={() => setCurrentTab('home')}
-        />
+        currentUser?.role === 'admin' ? (
+          <AdminDashboard
+            products={products}
+            orders={orders}
+            users={users}
+            onUpdateOrderStatus={handleUpdateOrderStatus}
+            onAddProduct={handleAddProductAdmin}
+            onDeleteProduct={handleDeleteProductAdmin}
+            onBackToStore={() => setCurrentTab('home')}
+          />
+        ) : (
+          <div className="container" style={{ padding: '80px 20px', textAlign: 'center' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '14px' }}>⛔</div>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#1e293b' }}>
+              Truy Cập Bị Từ Chối!
+            </h3>
+            <p style={{ color: '#64748b', marginTop: '10px', maxWidth: '480px', margin: '10px auto 24px' }}>
+              Chỉ tài khoản Quản trị viên (Admin) mới có quyền truy cập vào phân hệ này. Bạn đang đăng nhập với tài khoản người dùng thông thường hoặc chưa đăng nhập.
+            </p>
+            <button className="btn-primary-cta" onClick={() => setCurrentTab('home')}>
+              ← Quay Về Trang Chủ
+            </button>
+          </div>
+        )
       )}
 
       {/* VIEW 6: NUÔI THÚ CƯNG ẢO (Đạt & Vân) */}
       {currentTab === 'virtual-pet' && (
-        <div className="container" style={{ padding: '40px 20px 80px' }}>
-          <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 36px' }}>
-            <div className="section-tagline" style={{ justifyContent: 'center' }}>
-              <span>🎮</span> Gamification PetCare Joy
-            </div>
-            <h2 className="section-main-heading">
-              Góc Nuôi <span>Thú Cưng Ảo Nhận Voucher</span>
-            </h2>
-            <p style={{ color: '#64748b', marginTop: '10px' }}>
-              Chăm sóc bé cún/mèo ảo hàng ngày để tích lũy điểm kinh nghiệm và đổi lấy các voucher giảm giá khi mua hàng thực tế!
-            </p>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', maxWidth: '960px', margin: '0 auto' }}>
-            <PetAvatar petState={virtualPet} onAction={handleVirtualPetAction} />
-            <LevelSystem petState={virtualPet} onClaimVoucher={handleClaimVoucher} />
-          </div>
+        <div className="container" style={{ padding: '20px 20px 80px' }}>
+          <VirtualPetDashboard
+            petState={virtualPet}
+            setPetState={setVirtualPet}
+            onClaimVoucher={handleClaimVoucher}
+            onNavigateToShop={(actionType) => {
+              if (actionType === 'cart') {
+                setIsCartOpen(true);
+              } else {
+                setCurrentTab('home');
+                scrollToProducts();
+              }
+            }}
+          />
         </div>
       )}
 
@@ -729,23 +858,34 @@ export default function App() {
         onProceedCheckout={handleProceedCheckout}
       />
 
-      {/* Modal Đăng nhập / Đăng ký (Trâm) */}
+      {/* Modal Đăng nhập / Đăng ký (Trâm & Phân quyền Role-based) */}
       {isAuthOpen && (
         <div className="modal-overlay" onClick={() => setIsAuthOpen(false)}>
           {authMode === 'login' ? (
             <Login
+              users={users}
               onLoginSuccess={(user) => {
+                setCurrentUser(user);
                 setIsAuthOpen(false);
-                showToast(`🎉 Xin chào, ${user.name}! Đăng nhập thành công.`);
+                showToast(
+                  `🎉 Xin chào, ${user.name}! Đăng nhập thành công (${
+                    user.role === 'admin' ? '👑 Quản Trị Viên' : 'Khách Hàng'
+                  }).`
+                );
               }}
               onSwitchToRegister={() => setAuthMode('register')}
               onClose={() => setIsAuthOpen(false)}
             />
           ) : (
             <Register
-              onRegisterSuccess={(user) => {
+              onRegisterSuccess={(newUser) => {
+                // Yêu cầu 1: Lưu tài khoản mới đăng ký với role: "user"
+                setUsers((prev) => [newUser, ...prev]);
+                setCurrentUser(newUser);
                 setIsAuthOpen(false);
-                showToast(`🎉 Chúc mừng ${user.name} đã đăng ký tài khoản thành công! Nhận voucher 10%.`);
+                showToast(
+                  `🎉 Chúc mừng ${newUser.name} đã đăng ký tài khoản thành công với vai trò: Khách Hàng (User)!`
+                );
               }}
               onSwitchToLogin={() => setAuthMode('login')}
               onClose={() => setIsAuthOpen(false)}

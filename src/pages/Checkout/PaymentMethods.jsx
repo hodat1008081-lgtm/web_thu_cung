@@ -1,6 +1,6 @@
 // src/pages/Checkout/PaymentMethods.jsx
 // Nhiệm vụ: Hiển - Tích hợp các cổng thanh toán & xác nhận đặt hàng
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { formatCurrency } from '../../data/products';
 
 export default function PaymentMethods({
@@ -179,17 +179,29 @@ export default function PaymentMethods({
 
     setTimeout(() => {
       setIsProcessing(false);
+      const orderCode = `PET-${Date.now().toString().slice(-6)}`;
+      const selectedOption = paymentOptions.find((o) => o.id === selectedMethod);
       const orderData = {
-        orderId: `PET-${Date.now().toString().slice(-6)}`,
+        id: orderCode,
+        orderId: orderCode,
         createdAt: new Date().toLocaleTimeString('vi-VN') + ' ' + new Date().toLocaleDateString('vi-VN'),
+        customerName: customerInfo.fullName || 'Khách hàng PetCare',
+        phone: customerInfo.phone || '0988 xxx xxx',
+        deliveryAddress: customerInfo.address
+          ? `${customerInfo.address}${customerInfo.city ? `, ${customerInfo.city}` : ''}`
+          : 'Địa chỉ nhận hàng',
+        note: customerInfo.note || '',
         customer: customerInfo,
         items: cartItems,
+        petName: cartItems.map((item) => item.name).join(', '),
         totalAmount: finalTotal,
+        totalPrice: finalTotal,
         discountAmount: discountAmount,
         voucherCode: appliedVoucher ? appliedVoucher.code : null,
-        paymentMethod: selectedMethod,
+        paymentMethod: selectedOption?.title || 'COD Tiền mặt',
+        paymentMethodId: selectedMethod,
         cardDetails: selectedMethod === 'card' ? { ...cardInfo, cvv: '***' } : null,
-        status: 'confirmed',
+        status: 'pending',
       };
 
       if (onConfirmOrder) {

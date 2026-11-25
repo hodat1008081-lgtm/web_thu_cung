@@ -15,6 +15,8 @@ export default function Header({
   onOpenServiceModal,
   onNavigateTab,
   currentTab = 'home',
+  currentUser = null,
+  onLogout,
 }) {
   return (
     <header className="main-header">
@@ -31,7 +33,7 @@ export default function Header({
               📞 Hotline: 1900 8899 (Miễn phí)
             </a>
             <span className="top-bar-item">⏰ Mở cửa: 08:00 - 21:30</span>
-            {/* Shortcut chuyển nhanh sang Tra cứu đơn & Trang Admin */}
+            {/* Shortcut chuyển nhanh sang Tra cứu đơn */}
             <button
               type="button"
               className="top-bar-item top-bar-link"
@@ -40,19 +42,24 @@ export default function Header({
             >
               🚚 Tra cứu đơn hàng
             </button>
-            <button
-              type="button"
-              className="top-bar-item top-bar-link"
-              onClick={() => onNavigateTab && onNavigateTab('admin')}
-              style={{
-                background: 'rgba(255,255,255,0.25)',
-                padding: '2px 8px',
-                borderRadius: '6px',
-                fontWeight: '700',
-              }}
-            >
-              👑 Quản trị (Admin)
-            </button>
+            {/* CHỈ TÀI KHOẢN CÓ ROLE: "ADMIN" MỚI HIỂN THỊ NÚT "Trang Quản Trị" */}
+            {currentUser?.role === 'admin' && (
+              <button
+                type="button"
+                className="top-bar-item top-bar-link"
+                onClick={() => onNavigateTab && onNavigateTab('admin')}
+                style={{
+                  background: currentTab === 'admin' ? '#ffffff' : 'rgba(255,255,255,0.25)',
+                  color: currentTab === 'admin' ? '#ff6b35' : '#ffffff',
+                  padding: '2px 10px',
+                  borderRadius: '6px',
+                  fontWeight: '700',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                }}
+              >
+                👑 Trang Quản Trị
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -134,17 +141,74 @@ export default function Header({
             {totalCartCount > 0 && <span className="badge-count">{totalCartCount}</span>}
           </button>
 
-          {/* Nút Đăng nhập / Đăng ký (Trâm) */}
-          <button
-            className="user-login-btn"
-            onClick={onOpenAuth}
-          >
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-            <span>Đăng nhập</span>
-          </button>
+          {/* Nút Đăng nhập / Tài khoản người dùng (Phân quyền Role-based) */}
+          {currentUser ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: '#f8fafc',
+                  border: '1.5px solid #fed7aa',
+                  padding: '5px 12px',
+                  borderRadius: '30px',
+                }}
+              >
+                <div
+                  style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    background: currentUser.role === 'admin' ? '#ff6b35' : '#10b981',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: '800',
+                    fontSize: '0.82rem',
+                  }}
+                >
+                  {currentUser.role === 'admin' ? '👑' : '👤'}
+                </div>
+                <div style={{ textAlign: 'left', lineHeight: '1.2' }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: '800', color: '#1e293b' }}>
+                    {currentUser.name}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '0.68rem',
+                      fontWeight: '700',
+                      textTransform: 'uppercase',
+                      color: currentUser.role === 'admin' ? '#ff6b35' : '#10b981',
+                    }}
+                  >
+                    {currentUser.role === 'admin' ? 'Quản Trị Viên' : 'Khách Hàng'}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onLogout}
+                className="btn-secondary-cta"
+                title="Đăng xuất tài khoản"
+                style={{ padding: '6px 10px', fontSize: '0.78rem', borderRadius: '20px' }}
+              >
+                Thoát ⎋
+              </button>
+            </div>
+          ) : (
+            <button
+              className="user-login-btn"
+              onClick={onOpenAuth}
+            >
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span>Đăng nhập</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -232,7 +296,7 @@ export default function Header({
                 onClick={() => onNavigateTab && onNavigateTab('size-advisor')}
                 style={{ color: '#0ea5e9' }}
               >
-                📏 Tư Vấn Size Chuồng
+                📏 Tư Vấn Size Phụ Kiện
               </button>
             </li>
             <li>

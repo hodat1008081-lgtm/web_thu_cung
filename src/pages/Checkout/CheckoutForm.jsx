@@ -1,80 +1,83 @@
 // src/pages/Checkout/CheckoutForm.jsx
 // Nhiệm vụ: Hiển - Thu thập thông tin giao nhận thú cưng & khách hàng
-import React, { useState } from 'react';
+import { useState } from "react";
 
 // Hàm kiểm tra một sản phẩm có phải thú cưng sống hay không
-export const isPetItem = (item) => {
-  if (item.category === 'dog' || item.category === 'cat') return true;
-  if (item.category === 'food' || item.category === 'accessory') return false;
-  const name = (item.name || '').toLowerCase();
+const isPetItem = (item) => {
+  if (item.category === "dog" || item.category === "cat") return true;
+  if (item.category === "food" || item.category === "accessory") return false;
+  const name = (item.name || "").toLowerCase();
   const isSupply =
-    name.includes('hạt') ||
-    name.includes('thức ăn') ||
-    name.includes('nhà cây') ||
-    name.includes('cào móng') ||
-    name.includes('pate') ||
-    name.includes('phụ kiện') ||
-    name.includes('chuồng') ||
-    name.includes('cát');
+    name.includes("hạt") ||
+    name.includes("thức ăn") ||
+    name.includes("nhà cây") ||
+    name.includes("cào móng") ||
+    name.includes("pate") ||
+    name.includes("phụ kiện") ||
+    name.includes("chuồng") ||
+    name.includes("cát");
   if (isSupply) return false;
   return (
-    name.includes('chó') ||
-    name.includes('mèo') ||
-    name.includes('cún') ||
-    name.includes('poodle') ||
-    name.includes('corgi') ||
-    name.includes('retriever') ||
-    name.includes('ragdoll') ||
-    name.includes('munchkin')
+    name.includes("chó") ||
+    name.includes("mèo") ||
+    name.includes("cún") ||
+    name.includes("poodle") ||
+    name.includes("corgi") ||
+    name.includes("retriever") ||
+    name.includes("ragdoll") ||
+    name.includes("munchkin")
   );
 };
 
 // Danh sách 34 tỉnh thành theo yêu cầu hệ thống
-export const PROVINCE_OPTIONS = [
-  { id: 'AG', name: '1. An Giang' },
-  { id: 'BN', name: '2. Bắc Ninh' },
-  { id: 'CM', name: '3. Cà Mau' },
-  { id: 'CB', name: '4. Cao Bằng' },
-  { id: 'CT', name: '5. TP. Cần Thơ' },
-  { id: 'DN', name: '6. TP. Đà Nẵng' },
-  { id: 'DL', name: '7. Đắk Lắk' },
-  { id: 'DB', name: '8. Điện Biên' },
-  { id: 'DNA', name: '9. Đồng Nai' },
-  { id: 'DT', name: '10. Đồng Tháp' },
-  { id: 'GL', name: '11. Gia Lai' },
-  { id: 'HN', name: '12. TP. Hà Nội' },
-  { id: 'HT', name: '13. Hà Tĩnh' },
-  { id: 'HP', name: '14. TP. Hải Phòng' },
-  { id: 'HCM', name: '15. TP. Hồ Chí Minh' },
-  { id: 'HUE', name: '16. TP. Huế' },
-  { id: 'HY', name: '17. Hưng Yên' },
-  { id: 'KH', name: '18. Khánh Hòa' },
-  { id: 'LC', name: '19. Lai Châu' },
-  { id: 'LS', name: '20. Lạng Sơn' },
-  { id: 'LCA', name: '21. Lào Cai' },
-  { id: 'LD', name: '22. Lâm Đồng' },
-  { id: 'NA', name: '23. Nghệ An' },
-  { id: 'NB', name: '24. Ninh Bình' },
-  { id: 'PT', name: '25. Phú Thọ' },
-  { id: 'QNG', name: '26. Quảng Ngãi' },
-  { id: 'QN', name: '27. Quảng Ninh' },
-  { id: 'QT', name: '28. Quảng Trị' },
-  { id: 'SL', name: '29. Sơn La' },
-  { id: 'TN', name: '30. Tây Ninh' },
-  { id: 'TNG', name: '31. Thái Nguyên' },
-  { id: 'TH', name: '32. Thanh Hóa' },
-  { id: 'TQ', name: '33. Tuyên Quang' },
-  { id: 'VL', name: '34. Vĩnh Long' },
+const PROVINCE_OPTIONS = [
+  { id: "AG", name: "1. An Giang" },
+  { id: "BN", name: "2. Bắc Ninh" },
+  { id: "CM", name: "3. Cà Mau" },
+  { id: "CB", name: "4. Cao Bằng" },
+  { id: "CT", name: "5. TP. Cần Thơ" },
+  { id: "DN", name: "6. TP. Đà Nẵng" },
+  { id: "DL", name: "7. Đắk Lắk" },
+  { id: "DB", name: "8. Điện Biên" },
+  { id: "DNA", name: "9. Đồng Nai" },
+  { id: "DT", name: "10. Đồng Tháp" },
+  { id: "GL", name: "11. Gia Lai" },
+  { id: "HN", name: "12. TP. Hà Nội" },
+  { id: "HT", name: "13. Hà Tĩnh" },
+  { id: "HP", name: "14. TP. Hải Phòng" },
+  { id: "HCM", name: "15. TP. Hồ Chí Minh" },
+  { id: "HUE", name: "16. TP. Huế" },
+  { id: "HY", name: "17. Hưng Yên" },
+  { id: "KH", name: "18. Khánh Hòa" },
+  { id: "LC", name: "19. Lai Châu" },
+  { id: "LS", name: "20. Lạng Sơn" },
+  { id: "LCA", name: "21. Lào Cai" },
+  { id: "LD", name: "22. Lâm Đồng" },
+  { id: "NA", name: "23. Nghệ An" },
+  { id: "NB", name: "24. Ninh Bình" },
+  { id: "PT", name: "25. Phú Thọ" },
+  { id: "QNG", name: "26. Quảng Ngãi" },
+  { id: "QN", name: "27. Quảng Ninh" },
+  { id: "QT", name: "28. Quảng Trị" },
+  { id: "SL", name: "29. Sơn La" },
+  { id: "TN", name: "30. Tây Ninh" },
+  { id: "TNG", name: "31. Thái Nguyên" },
+  { id: "TH", name: "32. Thanh Hóa" },
+  { id: "TQ", name: "33. Tuyên Quang" },
+  { id: "VL", name: "34. Vĩnh Long" },
 ];
 
-export default function CheckoutForm({ cartItems = [], formData, setFormData, onNextStep }) {
+export default function CheckoutForm({
+  cartItems = [],
+  formData,
+  setFormData,
+  onNextStep,
+}) {
   const [errors, setErrors] = useState({});
 
   // Phân tích các mặt hàng trong giỏ hàng
   const petItems = cartItems.filter(isPetItem);
-  const supplyItems = cartItems.filter((item) => !isPetItem(item));
   const hasPet = petItems.length > 0;
-  const hasSupply = supplyItems.length > 0;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -91,7 +94,7 @@ export default function CheckoutForm({ cartItems = [], formData, setFormData, on
   };
 
   const handleToggleExtraService = (serviceKey) => {
-    const current = formData.extraServices || ['vet', 'cushion', 'guarantee'];
+    const current = formData.extraServices || ["vet", "cushion", "guarantee"];
     const updated = current.includes(serviceKey)
       ? current.filter((k) => k !== serviceKey)
       : [...current, serviceKey];
@@ -101,14 +104,14 @@ export default function CheckoutForm({ cartItems = [], formData, setFormData, on
   // Nút điền nhanh dữ liệu mẫu phục vụ kiểm thử
   const handleFillDemo = () => {
     setFormData({
-      fullName: 'Trần Minh Hiển',
-      phone: '0988666888',
-      email: 'minhhien.petcare@gmail.com',
-      city: 'HCM',
-      address: '456 Nguyễn Thị Minh Khai, Phường 5, Quận 3',
-      deliveryTime: 'morning',
-      note: 'Chuẩn bị chuồng đệm ấm có máy lạnh cho bé, gọi trước khi đến 30 phút.',
-      extraServices: ['vet', 'cushion', 'guarantee'],
+      fullName: "Trần Minh Hiển",
+      phone: "0988666888",
+      email: "minhhien.petcare@gmail.com",
+      city: "HCM",
+      address: "456 Nguyễn Thị Minh Khai, Phường 5, Quận 3",
+      deliveryTime: "morning",
+      note: "Chuẩn bị chuồng đệm ấm có máy lạnh cho bé, gọi trước khi đến 30 phút.",
+      extraServices: ["vet", "cushion", "guarantee"],
     });
     setErrors({});
   };
@@ -118,27 +121,28 @@ export default function CheckoutForm({ cartItems = [], formData, setFormData, on
     const newErrors = {};
 
     if (!formData.fullName || !formData.fullName.trim()) {
-      newErrors.fullName = 'Vui lòng nhập họ và tên người nhận!';
+      newErrors.fullName = "Vui lòng nhập họ và tên người nhận!";
     }
 
     if (!formData.phone || !formData.phone.trim()) {
-      newErrors.phone = 'Vui lòng nhập số điện thoại liên hệ!';
+      newErrors.phone = "Vui lòng nhập số điện thoại liên hệ!";
     } else {
-      const cleanPhone = formData.phone.replace(/[\s.-]/g, '');
+      const cleanPhone = formData.phone.replace(/[\s.-]/g, "");
       const phoneRegex = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
       if (!phoneRegex.test(cleanPhone)) {
-        newErrors.phone = 'Số điện thoại không hợp lệ (gồm 10 số, bắt đầu bằng 03, 05, 07, 08, 09)';
+        newErrors.phone =
+          "Số điện thoại không hợp lệ (gồm 10 số, bắt đầu bằng 03, 05, 07, 08, 09)";
       }
     }
 
     if (!formData.address || !formData.address.trim()) {
-      newErrors.address = 'Vui lòng nhập địa chỉ nhận hàng chi tiết!';
+      newErrors.address = "Vui lòng nhập địa chỉ nhận hàng chi tiết!";
     }
 
     // QUY TẮC NGHIỆP VỤ: Mặt hàng thú cưng chỉ giao tận nhà tại TP.HCM (Mô hình 100% Online)
-    if (hasPet && formData.city !== 'HCM') {
+    if (hasPet && formData.city !== "HCM") {
       newErrors.city =
-        'Mô hình Online: Thú cưng sống chỉ hỗ trợ giao hàng tận nhà tại TP. Hồ Chí Minh bằng xe máy lạnh chuyên dụng. Quý khách ở tỉnh thành khác vui lòng chọn TP. Hồ Chí Minh hoặc chỉ đặt các sản phẩm thức ăn / phụ kiện.';
+        "Mô hình Online: Thú cưng sống chỉ hỗ trợ giao hàng tận nhà tại TP. Hồ Chí Minh bằng xe máy lạnh chuyên dụng. Quý khách ở tỉnh thành khác vui lòng chọn TP. Hồ Chí Minh hoặc chỉ đặt các sản phẩm thức ăn / phụ kiện.";
     }
 
     setErrors(newErrors);
@@ -273,11 +277,19 @@ export default function CheckoutForm({ cartItems = [], formData, setFormData, on
           <div className="cf-model-tag">
             <span>🌐</span> Mô hình Cửa Hàng Thú Cưng Online 100% - Giao Tận Nhà
           </div>
-          <h3 style={{ fontSize: '1.3rem', fontWeight: '800', color: '#1e293b', marginBottom: '4px' }}>
+          <h3
+            style={{
+              fontSize: "1.3rem",
+              fontWeight: "800",
+              color: "#1e293b",
+              marginBottom: "4px",
+            }}
+          >
             🚚 1. Thông Tin Nhận Hàng & Giao Bé Tận Nơi
           </h3>
-          <p style={{ fontSize: '0.86rem', color: '#64748b', margin: 0 }}>
-            PetCare Joy hoạt động theo mô hình trực tuyến, phục vụ giao hàng tận nhà nhanh chóng & an toàn.
+          <p style={{ fontSize: "0.86rem", color: "#64748b", margin: 0 }}>
+            PetCare Joy hoạt động theo mô hình trực tuyến, phục vụ giao hàng tận
+            nhà nhanh chóng & an toàn.
           </p>
         </div>
         <button
@@ -297,19 +309,32 @@ export default function CheckoutForm({ cartItems = [], formData, setFormData, on
         <div
           className="cf-policy-badge"
           style={{
-            background: '#fff7ed',
-            border: '1.5px solid #ffedd5',
-            color: '#9a3412',
+            background: "#fff7ed",
+            border: "1.5px solid #ffedd5",
+            color: "#9a3412",
           }}
         >
-          <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>🐾</span>
+          <span style={{ fontSize: "1.5rem", lineHeight: 1 }}>🐾</span>
           <div>
-            <div style={{ fontWeight: '800', fontSize: '0.92rem', marginBottom: '2px' }}>
+            <div
+              style={{
+                fontWeight: "800",
+                fontSize: "0.92rem",
+                marginBottom: "2px",
+              }}
+            >
               Quy định giao thú cưng sống (Mô hình Online):
             </div>
             <div>
-              Đơn hàng của bạn có <strong>{petItems.length} bé thú cưng</strong> ({petItems.map((p) => p.name).join(', ')}). 
-              Vì là sinh vật sống cần xe máy lạnh 22°C và bác sĩ thú y trực tiếp giao tận nhà để kiểm tra sức khỏe, PetCare Joy hiện <strong>chỉ nhận giao thú cưng trong khu vực TP. Hồ Chí Minh</strong>. Khách hàng ở các tỉnh thành khác vui lòng chọn mua phụ kiện, thức ăn hoặc đăng ký địa chỉ nhận tại TP.HCM.
+              Đơn hàng của bạn có <strong>{petItems.length} bé thú cưng</strong>{" "}
+              ({petItems.map((p) => p.name).join(", ")}). Vì là sinh vật sống
+              cần xe máy lạnh 22°C và bác sĩ thú y trực tiếp giao tận nhà để
+              kiểm tra sức khỏe, PetCare Joy hiện{" "}
+              <strong>
+                chỉ nhận giao thú cưng trong khu vực TP. Hồ Chí Minh
+              </strong>
+              . Khách hàng ở các tỉnh thành khác vui lòng chọn mua phụ kiện,
+              thức ăn hoặc đăng ký địa chỉ nhận tại TP.HCM.
             </div>
           </div>
         </div>
@@ -317,18 +342,28 @@ export default function CheckoutForm({ cartItems = [], formData, setFormData, on
         <div
           className="cf-policy-badge"
           style={{
-            background: '#f0fdf4',
-            border: '1.5px solid #dcfce7',
-            color: '#166534',
+            background: "#f0fdf4",
+            border: "1.5px solid #dcfce7",
+            color: "#166534",
           }}
         >
-          <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>📦</span>
+          <span style={{ fontSize: "1.5rem", lineHeight: 1 }}>📦</span>
           <div>
-            <div style={{ fontWeight: '800', fontSize: '0.92rem', marginBottom: '2px' }}>
+            <div
+              style={{
+                fontWeight: "800",
+                fontSize: "0.92rem",
+                marginBottom: "2px",
+              }}
+            >
               Giao hàng tận nơi trên toàn bộ 34 tỉnh thành:
             </div>
             <div>
-              Đơn hàng gồm thức ăn & phụ kiện thú cưng, PetCare Joy phục vụ <strong>giao hàng tận nơi trên toàn bộ các tỉnh thành tại Việt Nam</strong> thông qua các đơn vị chuyển phát nhanh uy tín.
+              Đơn hàng gồm thức ăn & phụ kiện thú cưng, PetCare Joy phục vụ{" "}
+              <strong>
+                giao hàng tận nơi trên toàn bộ các tỉnh thành tại Việt Nam
+              </strong>{" "}
+              thông qua các đơn vị chuyển phát nhanh uy tín.
             </div>
           </div>
         </div>
@@ -339,7 +374,14 @@ export default function CheckoutForm({ cartItems = [], formData, setFormData, on
          ======================================================== */}
       <form onSubmit={handleSubmit} noValidate>
         {/* Họ tên & Số điện thoại */}
-        <div className="cf-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div
+          className="cf-form-grid"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "16px",
+          }}
+        >
           <div className="form-group">
             <label className="form-label">
               <span>👤</span> Họ và tên người nhận *
@@ -349,11 +391,13 @@ export default function CheckoutForm({ cartItems = [], formData, setFormData, on
               name="fullName"
               className="form-input"
               placeholder="VD: Trần Minh Hiển"
-              value={formData.fullName || ''}
+              value={formData.fullName || ""}
               onChange={handleChange}
-              style={{ borderColor: errors.fullName ? '#ef4444' : undefined }}
+              style={{ borderColor: errors.fullName ? "#ef4444" : undefined }}
             />
-            {errors.fullName && <div className="cf-field-error">✕ {errors.fullName}</div>}
+            {errors.fullName && (
+              <div className="cf-field-error">✕ {errors.fullName}</div>
+            )}
           </div>
 
           <div className="form-group">
@@ -365,16 +409,25 @@ export default function CheckoutForm({ cartItems = [], formData, setFormData, on
               name="phone"
               className="form-input"
               placeholder="VD: 0988666888"
-              value={formData.phone || ''}
+              value={formData.phone || ""}
               onChange={handleChange}
-              style={{ borderColor: errors.phone ? '#ef4444' : undefined }}
+              style={{ borderColor: errors.phone ? "#ef4444" : undefined }}
             />
-            {errors.phone && <div className="cf-field-error">✕ {errors.phone}</div>}
+            {errors.phone && (
+              <div className="cf-field-error">✕ {errors.phone}</div>
+            )}
           </div>
         </div>
 
         {/* Tỉnh / Thành phố & Thời gian nhận bé */}
-        <div className="cf-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div
+          className="cf-form-grid"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "16px",
+          }}
+        >
           <div className="form-group">
             <label className="form-label">
               <span>🏙️</span> Tỉnh / Thành phố nhận hàng *
@@ -382,31 +435,33 @@ export default function CheckoutForm({ cartItems = [], formData, setFormData, on
             <select
               name="city"
               className="form-input"
-              value={formData.city || 'HCM'}
+              value={formData.city || "HCM"}
               onChange={handleChange}
               style={{
-                borderColor: errors.city ? '#ef4444' : undefined,
-                fontWeight: '600',
+                borderColor: errors.city ? "#ef4444" : undefined,
+                fontWeight: "600",
               }}
             >
               {PROVINCE_OPTIONS.map((prov) => {
-                const isRestrictedForPet = hasPet && prov.id !== 'HCM';
+                const isRestrictedForPet = hasPet && prov.id !== "HCM";
                 return (
                   <option
                     key={prov.id}
                     value={prov.id}
                     disabled={isRestrictedForPet}
                   >
-                    {prov.name} {isRestrictedForPet ? '— [Chỉ giao phụ kiện/thức ăn]' : ''}
+                    {prov.name}{" "}
+                    {isRestrictedForPet ? "— [Chỉ giao phụ kiện/thức ăn]" : ""}
                   </option>
                 );
               })}
             </select>
             {errors.city ? (
               <div className="cf-field-error">✕ {errors.city}</div>
-            ) : hasPet && formData.city !== 'HCM' ? (
+            ) : hasPet && formData.city !== "HCM" ? (
               <div className="cf-field-error">
-                ⚠️ Thú cưng sống chỉ hỗ trợ giao tại TP. Hồ Chí Minh. Vui lòng chọn TP. Hồ Chí Minh.
+                ⚠️ Thú cưng sống chỉ hỗ trợ giao tại TP. Hồ Chí Minh. Vui lòng
+                chọn TP. Hồ Chí Minh.
               </div>
             ) : null}
           </div>
@@ -418,14 +473,16 @@ export default function CheckoutForm({ cartItems = [], formData, setFormData, on
             <select
               name="deliveryTime"
               className="form-input"
-              value={formData.deliveryTime || 'morning'}
+              value={formData.deliveryTime || "morning"}
               onChange={handleChange}
             >
               <option value="morning">Buổi sáng (08:30 - 11:30)</option>
               <option value="afternoon">Buổi chiều (14:00 - 17:30)</option>
               <option value="evening">Buổi tối (18:30 - 21:00)</option>
-              {formData.city === 'HCM' && (
-                <option value="urgent">🚀 Giao hỏa tốc 2H (Nội thành TP.HCM)</option>
+              {formData.city === "HCM" && (
+                <option value="urgent">
+                  🚀 Giao hỏa tốc 2H (Nội thành TP.HCM)
+                </option>
               )}
             </select>
           </div>
@@ -441,56 +498,70 @@ export default function CheckoutForm({ cartItems = [], formData, setFormData, on
             name="address"
             className="form-input"
             placeholder="Số nhà, tên đường, phường/xã, quận/huyện..."
-            value={formData.address || ''}
+            value={formData.address || ""}
             onChange={handleChange}
             style={{
-              borderColor: errors.address ? '#ef4444' : undefined,
+              borderColor: errors.address ? "#ef4444" : undefined,
             }}
           />
-          {errors.address && <div className="cf-field-error">✕ {errors.address}</div>}
+          {errors.address && (
+            <div className="cf-field-error">✕ {errors.address}</div>
+          )}
         </div>
 
         {/* Dịch vụ chăm sóc thú cưng đi kèm */}
         {hasPet && (
-          <div style={{ marginBottom: '20px' }}>
-            <label className="form-label" style={{ fontWeight: '700', marginBottom: '8px' }}>
-              <span>🎁</span> Tiện ích chăm sóc thú cưng giao tận nhà (Miễn phí):
+          <div style={{ marginBottom: "20px" }}>
+            <label
+              className="form-label"
+              style={{ fontWeight: "700", marginBottom: "8px" }}
+            >
+              <span>🎁</span> Tiện ích chăm sóc thú cưng giao tận nhà (Miễn
+              phí):
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: "10px",
+              }}
+            >
               {[
                 {
-                  id: 'vet',
-                  icon: '🩺',
-                  label: 'Bác sĩ thú y đi kèm bàn giao & hướng dẫn 1-1',
+                  id: "vet",
+                  icon: "🩺",
+                  label: "Bác sĩ thú y đi kèm bàn giao & hướng dẫn 1-1",
                 },
                 {
-                  id: 'cushion',
-                  icon: '🛋️',
-                  label: 'Chuồng lót đệm ấm có máy lạnh điều hòa',
+                  id: "cushion",
+                  icon: "🛋️",
+                  label: "Chuồng lót đệm ấm có máy lạnh điều hòa",
                 },
                 {
-                  id: 'guarantee',
-                  icon: '📜',
-                  label: 'Hợp đồng bảo hành thuần chủng & Sổ tiêm vắc xin',
+                  id: "guarantee",
+                  icon: "📜",
+                  label: "Hợp đồng bảo hành thuần chủng & Sổ tiêm vắc xin",
                 },
               ].map((service) => {
-                const isChecked = (formData.extraServices || ['vet', 'cushion', 'guarantee']).includes(
-                  service.id
-                );
+                const isChecked = (
+                  formData.extraServices || ["vet", "cushion", "guarantee"]
+                ).includes(service.id);
                 return (
                   <div
                     key={service.id}
-                    className={`cf-checkbox-card ${isChecked ? 'checked' : ''}`}
+                    className={`cf-checkbox-card ${isChecked ? "checked" : ""}`}
                     onClick={() => handleToggleExtraService(service.id)}
                   >
                     <input
                       type="checkbox"
                       checked={isChecked}
                       onChange={() => handleToggleExtraService(service.id)}
-                      style={{ accentColor: '#10b981' }}
+                      style={{ accentColor: "#10b981" }}
                     />
                     <span>{service.icon}</span>
-                    <span style={{ fontWeight: isChecked ? '700' : '500' }}>{service.label}</span>
+                    <span style={{ fontWeight: isChecked ? "700" : "500" }}>
+                      {service.label}
+                    </span>
                   </div>
                 );
               })}
@@ -508,14 +579,18 @@ export default function CheckoutForm({ cartItems = [], formData, setFormData, on
             rows="2"
             className="form-input"
             placeholder="VD: Xe mở điều hòa mát mẻ 22°C, gọi trước khi giao 30 phút..."
-            value={formData.note || ''}
+            value={formData.note || ""}
             onChange={handleChange}
           ></textarea>
         </div>
 
         {/* Nút bấm chuyển bước */}
         {onNextStep && (
-          <button type="submit" className="submit-btn-full" style={{ marginTop: '12px' }}>
+          <button
+            type="submit"
+            className="submit-btn-full"
+            style={{ marginTop: "12px" }}
+          >
             Tiếp Tục Chọn Phương Thức Thanh Toán →
           </button>
         )}

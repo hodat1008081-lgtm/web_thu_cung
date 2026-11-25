@@ -8,6 +8,40 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Quicksand:wght@600;700&display=swap" rel="stylesheet">
+    <!-- TailwindCSS CDN with PetCare Joy Theme Extensions -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: {
+                DEFAULT: '#ff6b35',
+                hover: '#f0541e',
+                light: '#fff2ec',
+                border: '#ffd8cc',
+              },
+              secondary: {
+                DEFAULT: '#ffb703',
+                light: '#fff9e6',
+              },
+              tealAccent: {
+                DEFAULT: '#10b981',
+                light: '#ecfdf5',
+              },
+              purpleAccent: {
+                DEFAULT: '#8b5cf6',
+                light: '#f5f3ff',
+              }
+            },
+            fontFamily: {
+              sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+              heading: ['"Quicksand"', '"Plus Jakarta Sans"', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

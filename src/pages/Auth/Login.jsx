@@ -1,24 +1,83 @@
 // src/pages/Auth/Login.jsx
-// Nhiệm vụ: Trâm - Xây dựng phân hệ xác thực & Đăng nhập
-import React, { useState } from 'react';
+// Nhiệm vụ: Trâm & Nhóm - Phân hệ Xác thực & Đăng nhập (Role-based Authentication)
+import { useState } from 'react';
 
-export default function Login({ onLoginSuccess, onSwitchToRegister, onClose }) {
+export default function Login({ onLoginSuccess, onSwitchToRegister, onClose, users = [] }) {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Hàm điền nhanh tài khoản Admin mặc định để test tiện lợi
+  const handleFillAdmin = () => {
+    setIdentifier('admin@petcare.com');
+    setPassword('admin123');
+    setErrorMessage('');
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!identifier || !password) {
-      alert('Vui lòng nhập đầy đủ thông tin đăng nhập!');
+    setErrorMessage('');
+
+    const cleanId = identifier.trim().toLowerCase();
+
+    // 1. Kiểm tra tài khoản Admin mặc định theo yêu cầu đề bài
+    if (cleanId === 'admin@petcare.com' && password === 'admin123') {
+      if (onLoginSuccess) {
+        onLoginSuccess({
+          name: 'Quản Trị Viên (Admin)',
+          email: 'admin@petcare.com',
+          role: 'admin',
+          phone: '1900 8899',
+        });
+      }
       return;
     }
-    if (onLoginSuccess) {
-      onLoginSuccess({
-        name: identifier.includes('@') ? identifier.split('@')[0] : 'Khách hàng PetCare',
-        identifier,
-      });
+
+    // 2. Tìm kiếm trong danh sách users (tài khoản đã đăng ký hoặc mẫu)
+    const matchedUser = users.find(
+      (u) =>
+        (u.email?.toLowerCase() === cleanId || u.phone === cleanId) &&
+        u.password === password
+    );
+
+    if (matchedUser) {
+      if (onLoginSuccess) {
+        onLoginSuccess({
+          name: matchedUser.name,
+          email: matchedUser.email,
+          role: matchedUser.role || 'user',
+          phone: matchedUser.phone,
+        });
+      }
+      return;
     }
+
+    // 3. Nếu không tìm thấy hoặc mật khẩu sai
+    // Cho phép đăng nhập linh hoạt nếu người dùng nhập email/phone hợp lệ (mặc định role user)
+    // nhưng nếu cố tình nhập admin@petcare.com mà sai pass thì báo lỗi
+    if (cleanId === 'admin@petcare.com') {
+      setErrorMessage('Mật khẩu tài khoản Admin không đúng! (Mặc định: admin123)');
+      return;
+    }
+
+    if (cleanId && password.length >= 6) {
+      // Đăng nhập thành công với vai trò user
+      const displayName = cleanId.includes('@')
+        ? cleanId.split('@')[0]
+        : `Khách hàng ${cleanId.slice(-4)}`;
+      if (onLoginSuccess) {
+        onLoginSuccess({
+          name: displayName,
+          email: cleanId.includes('@') ? cleanId : `${cleanId}@petcare.local`,
+          role: 'user',
+          phone: !cleanId.includes('@') ? cleanId : '',
+        });
+      }
+      return;
+    }
+
+    setErrorMessage('Email/Số điện thoại hoặc mật khẩu không hợp lệ (tối thiểu 6 ký tự)!');
   };
 
   return (
@@ -45,8 +104,57 @@ export default function Login({ onLoginSuccess, onSwitchToRegister, onClose }) {
 
       <h3 className="modal-title">Chào Mừng Trở Lại! 🐾</h3>
       <p className="modal-subtitle">
-        Đăng nhập để xem giỏ hàng, lịch chăm sóc pet và nhận voucher giảm giá
+        Đăng nhập để xem giỏ hàng, tra cứu đơn hàng và quản lý tài khoản
       </p>
+
+      {/* Hộp gợi ý tài khoản Admin theo yêu cầu */}
+      <div
+        style={{
+          background: '#fff7ed',
+          border: '1.5px dashed #fed7aa',
+          padding: '12px 14px',
+          borderRadius: '12px',
+          marginBottom: '18px',
+          fontSize: '0.82rem',
+          color: '#9a3412',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '8px',
+        }}
+      >
+        <div>
+          <strong>👑 Tài khoản Quản trị (Admin):</strong>
+          <div style={{ fontSize: '0.78rem', color: '#c2410c' }}>
+            admin@petcare.com • Mật khẩu: <code>admin123</code>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={handleFillAdmin}
+          className="btn-secondary-cta"
+          style={{ padding: '4px 10px', fontSize: '0.75rem', whiteSpace: 'nowrap' }}
+        >
+          ⚡ Điền nhanh Admin
+        </button>
+      </div>
+
+      {errorMessage && (
+        <div
+          style={{
+            background: '#fef2f2',
+            color: '#dc2626',
+            border: '1px solid #fecaca',
+            padding: '8px 12px',
+            borderRadius: '8px',
+            fontSize: '0.82rem',
+            marginBottom: '16px',
+            fontWeight: '600',
+          }}
+        >
+          ⚠️ {errorMessage}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         <div className="form-group">
@@ -55,7 +163,7 @@ export default function Login({ onLoginSuccess, onSwitchToRegister, onClose }) {
             type="text"
             required
             className="form-input"
-            placeholder="VD: 0988 123 456 hoặc tram@petcare.vn"
+            placeholder="VD: admin@petcare.com hoặc 0988 123 456"
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
           />
@@ -104,7 +212,14 @@ export default function Login({ onLoginSuccess, onSwitchToRegister, onClose }) {
       <div style={{ display: 'flex', gap: '10px' }}>
         <button
           type="button"
-          onClick={() => onLoginSuccess && onLoginSuccess({ name: 'Google User', identifier: 'google_user@gmail.com' })}
+          onClick={() =>
+            onLoginSuccess &&
+            onLoginSuccess({
+              name: 'Google Member',
+              email: 'google_user@gmail.com',
+              role: 'user',
+            })
+          }
           className="btn-secondary-cta"
           style={{ flex: 1, padding: '10px', fontSize: '0.88rem' }}
         >
@@ -112,7 +227,14 @@ export default function Login({ onLoginSuccess, onSwitchToRegister, onClose }) {
         </button>
         <button
           type="button"
-          onClick={() => onLoginSuccess && onLoginSuccess({ name: 'Facebook User', identifier: 'facebook_user' })}
+          onClick={() =>
+            onLoginSuccess &&
+            onLoginSuccess({
+              name: 'Facebook Member',
+              email: 'facebook_user@petcare.vn',
+              role: 'user',
+            })
+          }
           className="btn-secondary-cta"
           style={{ flex: 1, padding: '10px', fontSize: '0.88rem' }}
         >
