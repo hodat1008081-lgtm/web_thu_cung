@@ -1,8 +1,8 @@
 // src/components/Cart/CartSidebar.jsx
-// Nhiệm vụ: Trâm - Giỏ hàng thông minh & Quản lý đơn hàng dự kiến
-import React from 'react';
+// Nhiệm vụ: Trâm - Giỏ hàng thông minh & Bắt buộc đăng nhập mới được thanh toán
 import CartItem from './CartItem';
 import { formatCurrency } from '../../data/products';
+import { useStore } from '../../context/StoreContext';
 
 export default function CartSidebar({
   isOpen,
@@ -12,6 +12,8 @@ export default function CartSidebar({
   onRemoveItem,
   onProceedCheckout,
 }) {
+  const { currentUser, products } = useStore();
+
   if (!isOpen) return null;
 
   const totalCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
@@ -44,16 +46,43 @@ export default function CartSidebar({
           </div>
         ) : (
           <>
-            {/* Danh sách các CartItem */}
+            {/* Cảnh báo nếu khách vãng lai chưa đăng nhập */}
+            {!currentUser && (
+              <div
+                style={{
+                  background: '#fffbeb',
+                  border: '1px solid #fde68a',
+                  color: '#92400e',
+                  padding: '10px 14px',
+                  borderRadius: '12px',
+                  fontSize: '0.82rem',
+                  fontWeight: '600',
+                  marginBottom: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <span>🔒</span>
+                <span>Bạn cần đăng nhập tài khoản thành viên để tiến hành thanh toán đơn hàng.</span>
+              </div>
+            )}
+
+            {/* Danh sách các CartItem kèm tồn kho thời gian thực */}
             <div className="cart-items-list">
-              {cartItems.map((item) => (
-                <CartItem
-                  key={item.id}
-                  item={item}
-                  onUpdateQty={onUpdateQty}
-                  onRemoveItem={onRemoveItem}
-                />
-              ))}
+              {cartItems.map((item) => {
+                const storeProduct = products.find((p) => p.id === item.id);
+                const maxStock = storeProduct ? storeProduct.stock : (item.stock ?? 99);
+                return (
+                  <CartItem
+                    key={`${item.id}_${item.selectedSize || 'default'}`}
+                    item={item}
+                    maxStock={maxStock}
+                    onUpdateQty={onUpdateQty}
+                    onRemoveItem={onRemoveItem}
+                  />
+                );
+              })}
             </div>
 
             {/* Bảng tổng tiền & phí giao hàng */}
@@ -89,7 +118,7 @@ export default function CartSidebar({
                 }
               }}
             >
-              Tiến Hành Đặt Hàng & Thanh Toán →
+              {currentUser ? 'Tiến Hành Đặt Hàng & Thanh Toán →' : '🔐 Đăng Nhập Để Thanh Toán →'}
             </button>
           </>
         )}

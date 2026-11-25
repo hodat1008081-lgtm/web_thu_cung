@@ -10,12 +10,11 @@
 // - Vương: Tra cứu đơn hàng (TrackingTimeline) & Đề xuất (BehaviorAnalysis)
 // ==============================================================================
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import './App.css';
 
-// 1. Data dùng chung & Dữ liệu Khách / Admin
-import { INITIAL_PRODUCTS } from './data/products';
-import { INITIAL_USERS, INITIAL_ORDERS } from './data/mockData';
+// 1. Single Source of Truth (StoreContext)
+import { useStore } from './context/StoreContext';
 
 // 2. Header & Footer
 import Header from './components/Header/Header';
@@ -54,12 +53,72 @@ import SizeCalculator from './components/SizeAdvisor/SizeCalculator';
 // 12. Phân hệ Product Recommender (Hiển & Vương)
 import BehaviorAnalysis from './components/ProductRecommender/BehaviorAnalysis';
 
-export default function App() {
-  // Điều hướng chính: 'home' | 'product-detail' | 'checkout' | 'tracking' | 'admin' | 'virtual-pet' | 'size-advisor' | 'recommender'
-  const [currentTab, setCurrentTab] = useState('home');
+// Map đường dẫn URL <-> tab nội bộ
+const getTabFromPath = (pathname) => {
+  const clean = (pathname || '/').toLowerCase().replace(/\/+$/, '') || '/';
+  switch (clean) {
+    case '/admin':
+      return 'admin';
+    case '/checkout':
+      return 'checkout';
+    case '/tracking':
+      return 'tracking';
+    case '/virtual-pet':
+      return 'virtual-pet';
+    case '/size-advisor':
+      return 'size-advisor';
+    case '/recommender':
+      return 'recommender';
+    default:
+      return 'home';
+  }
+};
 
-  // Danh sách sản phẩm quản lý trong state (để admin có thể thêm/xóa)
-  const [products, setProducts] = useState(INITIAL_PRODUCTS);
+const getPathFromTab = (tab) => {
+  switch (tab) {
+    case 'admin':
+      return '/admin';
+    case 'checkout':
+      return '/checkout';
+    case 'tracking':
+      return '/tracking';
+    case 'virtual-pet':
+      return '/virtual-pet';
+    case 'size-advisor':
+      return '/size-advisor';
+    case 'recommender':
+      return '/recommender';
+    default:
+      return '/';
+  }
+};
+
+export default function App() {
+  const {
+    currentUser,
+    products,
+    cartItems,
+    wishlist,
+    logout,
+    addToCart,
+    updateCartQty,
+    removeCartItem,
+    toggleWishlist,
+    placeOrder,
+  } = useStore();
+
+  // Điều hướng chính: 'home' | 'product-detail' | 'checkout' | 'tracking' | 'admin' | 'virtual-pet' | 'size-advisor' | 'recommender'
+  const [currentTab, setCurrentTab] = useState(() => {
+    const initialTab = getTabFromPath(window.location.pathname);
+    if (initialTab === 'admin' && currentUser?.role !== 'admin') {
+      return 'home';
+    }
+    if (initialTab === 'checkout' && !currentUser) {
+      return 'home';
+    }
+    return initialTab;
+  });
+
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   // Tìm kiếm và lọc
@@ -69,110 +128,46 @@ export default function App() {
   const [sortBy, setSortBy] = useState('default');
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(true);
 
-  // Giỏ hàng
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 7,
-      name: 'Hạt Royal Canin Cao Cấp Cho Chó Mèo Con 2kg',
-      price: 420000,
-      image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=600&auto=format&fit=crop&q=80',
-      quantity: 1,
-    },
-  ]);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Danh sách yêu thích
-  const [wishlist, setWishlist] = useState([2, 3]);
-
-  // Thông báo toast
-  const [toastMessage, setToastMessage] = useState(null);
-
-  // =========================================================================
-  // Phân hệ Quản lý Tài khoản & Phân quyền (Yêu cầu 1)
-  // =========================================================================
-  const [users, setUsers] = useState(() => {
-    try {
-      const saved = localStorage.getItem('petcare_users');
-      return saved ? JSON.parse(saved) : INITIAL_USERS;
-    } catch {
-      return INITIAL_USERS;
+  // Thông báo toast (hiện cảnh báo ngay nếu bị chặn /admin hoặc /checkout khi tải trang)
+  const [toastMessage, setToastMessage] = useState(() => {
+    const path = window.location.pathname.toLowerCase();
+    if (path === '/admin' && currentUser?.role !== 'admin') {
+      return '⛔ Bạn không có quyền truy cập /admin! Tự động điều hướng về trang chủ.';
     }
+    if (path === '/checkout' && !currentUser) {
+      return '🔒 Vui lòng đăng nhập để tiếp tục thanh toán!';
+    }
+    return null;
   });
 
-  const [currentUser, setCurrentUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem('petcare_current_user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
+  // Modals (hỗ trợ mở sẵn nếu người dùng truy cập /login, /register hoặc bị chặn từ /checkout)
+  const [isAuthOpen, setIsAuthOpen] = useState(() => {
+    const path = window.location.pathname.toLowerCase();
+    return path === '/login' || path === '/register' || (path === '/checkout' && !currentUser);
   });
-
-  // =========================================================================
-  // Phân hệ Quản lý Đơn hàng Dùng chung Khách & Admin (Yêu cầu 2)
-  // =========================================================================
-  const [orders, setOrders] = useState(() => {
-    try {
-      const saved = localStorage.getItem('petcare_orders');
-      return saved ? JSON.parse(saved) : INITIAL_ORDERS;
-    } catch {
-      return INITIAL_ORDERS;
-    }
+  const [authMode, setAuthMode] = useState(() => {
+    const path = window.location.pathname.toLowerCase();
+    return path === '/register' ? 'register' : 'login';
   });
-
-  // Đồng bộ localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('petcare_users', JSON.stringify(users));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [users]);
-
-  useEffect(() => {
-    try {
-      if (currentUser) {
-        localStorage.setItem('petcare_current_user', JSON.stringify(currentUser));
-      } else {
-        localStorage.removeItem('petcare_current_user');
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }, [currentUser]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('petcare_orders', JSON.stringify(orders));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [orders]);
-
-  // Yêu cầu 1: Nếu user thường cố tình vào tab admin, tự động điều hướng về trang chủ
-  useEffect(() => {
-    if (currentTab === 'admin' && currentUser?.role !== 'admin') {
-      showToast('⛔ Bạn không có quyền truy cập Trang Quản Trị! (Chỉ dành cho Admin)');
-      setCurrentTab('home');
-    }
-  }, [currentTab, currentUser]);
-
-  // Modals
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
+  const [redirectAfterLogin, setRedirectAfterLogin] = useState(() => {
+    const path = window.location.pathname.toLowerCase();
+    return path === '/checkout' && !currentUser ? 'checkout' : null;
+  });
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
 
-  // Thông tin checkout (Hiển)
+  // Thông tin checkout đồng bộ từ currentUser (không dùng dữ liệu ảo hardcode)
   const [checkoutStep, setCheckoutStep] = useState(1); // 1: Form, 2: Payment
-  const [customerInfo, setCustomerInfo] = useState({
-    fullName: 'Trần Minh Hiển',
-    phone: '0988 666 888',
-    address: '456 Nguyễn Thị Minh Khai, Phường 5, Quận 3',
+  const [customerInfo, setCustomerInfo] = useState(() => ({
+    fullName: currentUser?.name || '',
+    phone: currentUser?.phone || '',
+    address: currentUser?.address || '',
     city: 'HCM',
     deliveryTime: 'morning',
-    note: 'Chuẩn bị chuồng đệm ấm cho bé',
-  });
-  const [currentOrderTrackingId, setCurrentOrderTrackingId] = useState('PET-2026-8899');
+    note: '',
+  }));
+  const [currentOrderTrackingId, setCurrentOrderTrackingId] = useState('');
 
   // State Nuôi Thú Ảo (Đạt & Vân)
   const [virtualPet, setVirtualPet] = useState({
@@ -188,59 +183,145 @@ export default function App() {
   });
 
   // Toast helper
-  const showToast = (msg) => {
+  const showToast = useCallback((msg) => {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage(null);
-    }, 3000);
-  };
+    }, 3500);
+  }, []);
 
-  // Thêm vào giỏ hàng
-  const handleAddToCart = (product) => {
-    setCartItems((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + (product.quantity || 1) } : item
-        );
+  // Cập nhật thông tin giao hàng khi đăng nhập/đăng xuất
+  const syncCustomerInfoFromUser = useCallback((user) => {
+    if (user) {
+      setCustomerInfo((prev) => ({
+        ...prev,
+        fullName: user.name || prev.fullName || '',
+        phone: user.phone || prev.phone || '',
+        address: user.address || prev.address || '',
+      }));
+    } else {
+      setCustomerInfo({
+        fullName: '',
+        phone: '',
+        address: '',
+        city: 'HCM',
+        deliveryTime: 'morning',
+        note: '',
+      });
+    }
+  }, []);
+
+  // Điều hướng đồng bộ URL + Bảo vệ route /admin & /checkout
+  const navigateToTab = useCallback(
+    (tab) => {
+      if (tab === 'admin' && currentUser?.role !== 'admin') {
+        showToast('⛔ Bạn không có quyền truy cập Trang Quản Trị! (Chỉ dành cho Admin)');
+        setCurrentTab('home');
+        if (window.location.pathname !== '/') {
+          window.history.replaceState(null, '', '/');
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
       }
-      return [...prev, { ...product, quantity: product.quantity || 1 }];
-    });
-    showToast(`🐾 Đã thêm "${product.name}" vào giỏ hàng!`);
+
+      if (tab === 'checkout' && !currentUser) {
+        showToast('🔒 Vui lòng đăng nhập hoặc đăng ký để tiến hành thanh toán!');
+        setRedirectAfterLogin('checkout');
+        setAuthMode('login');
+        setIsAuthOpen(true);
+        window.history.pushState(null, '', '/login');
+        return;
+      }
+
+      setCurrentTab(tab);
+      const nextPath = getPathFromTab(tab);
+      if (window.location.pathname !== nextPath) {
+        window.history.pushState(null, '', nextPath);
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+    [currentUser, showToast]
+  );
+
+  // Đồng bộ URL history & lắng nghe popstate trình duyệt (không gọi setState đồng bộ trong effect)
+  useEffect(() => {
+    const path = window.location.pathname.toLowerCase();
+    if (path === '/admin' && currentUser?.role !== 'admin') {
+      window.history.replaceState(null, '', '/');
+    } else if (path === '/checkout' && !currentUser) {
+      window.history.replaceState(null, '', '/login');
+    }
+
+    const handlePopState = () => {
+      const nextPath = window.location.pathname.toLowerCase();
+      if (nextPath === '/login' || nextPath === '/register') {
+        setAuthMode(nextPath === '/register' ? 'register' : 'login');
+        setIsAuthOpen(true);
+        return;
+      }
+      setIsAuthOpen(false);
+      const targetTab = getTabFromPath(nextPath);
+      if (targetTab === 'admin' && currentUser?.role !== 'admin') {
+        showToast('⛔ Bạn không có quyền truy cập Trang Quản Trị!');
+        setCurrentTab('home');
+        window.history.replaceState(null, '', '/');
+        return;
+      }
+      if (targetTab === 'checkout' && !currentUser) {
+        showToast('🔒 Vui lòng đăng nhập để thanh toán!');
+        setRedirectAfterLogin('checkout');
+        setAuthMode('login');
+        setIsAuthOpen(true);
+        window.history.replaceState(null, '', '/login');
+        return;
+      }
+      setCurrentTab(targetTab);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentUser, showToast]);
+
+  // Chuyển hướng sang trang /login
+  const openLoginPage = (mode = 'login') => {
+    setAuthMode(mode);
+    setIsAuthOpen(true);
+    window.history.pushState(null, '', mode === 'register' ? '/register' : '/login');
   };
 
-  // Cập nhật số lượng giỏ hàng
-  const handleUpdateQty = (id, delta) => {
-    setCartItems((prev) =>
-      prev
-        .map((item) => {
-          if (item.id === id) {
-            const nextQty = item.quantity + delta;
-            return nextQty > 0 ? { ...item, quantity: nextQty } : null;
-          }
-          return item;
-        })
-        .filter(Boolean)
-    );
+  const closeAuthModal = () => {
+    setIsAuthOpen(false);
+    setRedirectAfterLogin(null);
+    const backPath = getPathFromTab(currentTab);
+    if (window.location.pathname === '/login' || window.location.pathname === '/register') {
+      window.history.replaceState(null, '', backPath);
+    }
+  };
+
+  // Thêm vào giỏ hàng (kèm kiểm tra tồn kho)
+  const handleAddToCart = (product) => {
+    const res = addToCart(product, product.quantity || 1);
+    if (res?.message) showToast(res.message);
+  };
+
+  // Cập nhật số lượng giỏ hàng (chặn vượt quá tồn kho)
+  const handleUpdateQty = (id, delta, selectedSize) => {
+    const res = updateCartQty(id, delta, selectedSize);
+    if (!res.ok && res.message) {
+      showToast(res.message);
+    }
   };
 
   // Xóa sản phẩm khỏi giỏ
-  const handleRemoveCartItem = (id) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
+  const handleRemoveCartItem = (id, selectedSize) => {
+    removeCartItem(id, selectedSize);
     showToast('Đã xóa sản phẩm khỏi giỏ hàng.');
   };
 
   // Toggle wishlist
   const handleToggleWishlist = (productId) => {
-    setWishlist((prev) => {
-      if (prev.includes(productId)) {
-        showToast('Đã xóa khỏi danh sách yêu thích');
-        return prev.filter((id) => id !== productId);
-      } else {
-        showToast('❤️ Đã thêm vào danh sách yêu thích!');
-        return [...prev, productId];
-      }
-    });
+    const added = toggleWishlist(productId);
+    showToast(added ? '❤️ Đã thêm vào danh sách yêu thích!' : 'Đã xóa khỏi danh sách yêu thích');
   };
 
   // Xem chi tiết sản phẩm
@@ -250,130 +331,78 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Mua ngay từ trang chi tiết
+  // Mua ngay từ trang chi tiết (kiểm tra stock & bắt buộc đăng nhập)
   const handleBuyNow = (product) => {
-    handleAddToCart(product);
-    setCurrentTab('checkout');
+    const res = addToCart(product, product.quantity || 1);
+    if (!res.ok) {
+      showToast(res.message);
+      return;
+    }
+
+    if (!currentUser) {
+      showToast('🔒 Vui lòng đăng nhập hoặc đăng ký tài khoản để mua hàng!');
+      setRedirectAfterLogin('checkout');
+      openLoginPage('login');
+      return;
+    }
+
     setCheckoutStep(1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigateToTab('checkout');
   };
 
-  // Tiến hành checkout từ Giỏ hàng
+  // Tiến hành checkout từ Giỏ hàng (chặn khách vãng lai chưa đăng nhập)
   const handleProceedCheckout = () => {
     setIsCartOpen(false);
-    setCurrentTab('checkout');
+    if (!currentUser) {
+      showToast('🔒 Bạn chưa đăng nhập! Vui lòng đăng nhập để tiến hành thanh toán.');
+      setRedirectAfterLogin('checkout');
+      openLoginPage('login');
+      return;
+    }
     setCheckoutStep(1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigateToTab('checkout');
   };
 
-  // Xác nhận đặt hàng từ PaymentMethods (Yêu cầu 2: Lưu đầy đủ thông tin, trạng thái "Chờ xác nhận")
-  const handleConfirmOrder = (orderData) => {
-    const orderId = orderData.id || orderData.orderId || `PET-${Date.now().toString().slice(-6)}`;
-    const newOrder = {
-      ...orderData,
-      id: orderId,
-      status: 'pending', // Mặc định Trạng thái: "Chờ xác nhận" theo yêu cầu 2
-    };
+  // Xác nhận đặt hàng từ PaymentMethods (trừ kho tự động & lưu đơn thật vào StoreContext)
+  const handleConfirmOrder = ({ customerInfo: formInfo, paymentMethod }) => {
+    const res = placeOrder({ customerInfo: formInfo, paymentMethod });
 
-    setOrders((prev) => [newOrder, ...prev]);
-    setCurrentOrderTrackingId(orderId);
-    setCartItems([]);
-    showToast(`🎉 Đặt hàng thành công! Mã đơn: ${orderId} (Trạng thái: Chờ xác nhận)`);
-    setCurrentTab('tracking');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+    if (res.requireLogin) {
+      showToast(res.message);
+      setRedirectAfterLogin('checkout');
+      openLoginPage('login');
+      return;
+    }
 
-  // Admin cập nhật trạng thái đơn hàng (Yêu cầu 2: Đồng bộ trực tiếp với khách)
-  const handleUpdateOrderStatus = (orderId, newStatus) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
-    );
+    if (!res.ok) {
+      showToast(`⚠️ ${res.message}`);
+      return;
+    }
 
-    const statusLabels = {
-      pending: 'Chờ xác nhận',
-      shipping: 'Đang giao hàng',
-      completed: 'Hoàn thành',
-      cancelled: 'Đã hủy',
-    };
-    showToast(`✅ Quản trị viên: Đơn ${orderId} đã chuyển sang "${statusLabels[newStatus] || newStatus}"`);
+    setCurrentOrderTrackingId(res.order.id);
+    showToast(`🎉 Đặt hàng thành công! Mã đơn: ${res.order.id} (Trạng thái: Chờ xác nhận)`);
+    navigateToTab('tracking');
   };
 
   // Đăng xuất tài khoản
   const handleLogout = () => {
-    setCurrentUser(null);
+    logout();
+    syncCustomerInfoFromUser(null);
     showToast('👋 Đã đăng xuất tài khoản.');
-    if (currentTab === 'admin') {
+    if (currentTab === 'admin' || currentTab === 'checkout') {
       setCurrentTab('home');
+      window.history.replaceState(null, '', '/');
     }
   };
 
-  // Xử lý tương tác thú cưng ảo (Virtual Pet)
-  const handleVirtualPetAction = (action) => {
-    setVirtualPet((prev) => {
-      let expGain = 15;
-      let newHunger = prev.hunger;
-      let newHappiness = prev.happiness;
-      let newCleanliness = prev.cleanliness;
-
-      if (action === 'feed') {
-        newHunger = Math.min(100, prev.hunger + 25);
-        expGain = 15;
-        showToast('🍖 Bé măm măm no nê! (+15 EXP)');
-      } else if (action === 'play') {
-        newHappiness = Math.min(100, prev.happiness + 30);
-        newHunger = Math.max(0, prev.hunger - 10);
-        expGain = 20;
-        showToast('🎾 Bé vui vẻ chạy nhảy bắt bóng! (+20 EXP)');
-      } else if (action === 'bath') {
-        newCleanliness = Math.min(100, prev.cleanliness + 35);
-        expGain = 10;
-        showToast('🛁 Bé thơm phức hương vani! (+10 EXP)');
-      }
-
-      let newExp = prev.exp + expGain;
-      let newLevel = prev.level;
-      let nextThreshold = newLevel * 100;
-      let newPoints = prev.points + 10;
-
-      if (newExp >= nextThreshold) {
-        newLevel += 1;
-        newExp = newExp - nextThreshold;
-        showToast(`🎊 CHÚC MỪNG: Bé cưng ảo đã thăng lên CẤP ĐỘ ${newLevel}!`);
-      }
-
-      return {
-        ...prev,
-        level: newLevel,
-        exp: newExp,
-        points: newPoints,
-        hunger: newHunger,
-        happiness: newHappiness,
-        cleanliness: newCleanliness,
-      };
-    });
-  };
-
   // Đổi voucher từ Virtual Pet
-  const handleClaimVoucher = (amount) => {
+  const handleClaimVoucher = () => {
     if (virtualPet.points < 100) {
       alert('Bạn chưa đủ điểm thưởng (Cần tối thiểu 100 điểm)! Hãy tiếp tục chăm sóc bé nhé.');
       return;
     }
     setVirtualPet((p) => ({ ...p, points: p.points - 100 }));
     showToast(`🎁 Đã đổi thành công Voucher 50.000₫! Áp dụng cho lần mua sắm tiếp theo.`);
-  };
-
-  // Thêm/Xóa sản phẩm trong Admin (Đạt)
-  const handleAddProductAdmin = (newProd) => {
-    setProducts((prev) => [newProd, ...prev]);
-    showToast(`✅ Quản trị viên: Đã thêm mới "${newProd.name}" vào cửa hàng.`);
-  };
-
-  const handleDeleteProductAdmin = (id) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa sản phẩm/thú cưng này?')) {
-      setProducts((prev) => prev.filter((p) => p.id !== id));
-      showToast('Đã xóa sản phẩm thành công.');
-    }
   };
 
   // Hàm đặt lại toàn bộ tìm kiếm & bộ lọc (Vân)
@@ -429,7 +458,7 @@ export default function App() {
 
   // Cuộn đến phần sản phẩm
   const scrollToProducts = () => {
-    setCurrentTab('home');
+    navigateToTab('home');
     setTimeout(() => {
       const el = document.getElementById('featured-products');
       if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -447,26 +476,15 @@ export default function App() {
         totalCartCount={totalCartCount}
         wishlistCount={wishlist.length}
         onOpenCart={() => setIsCartOpen(true)}
-        onOpenAuth={() => {
-          setAuthMode('login');
-          setIsAuthOpen(true);
-        }}
+        onOpenAuth={() => openLoginPage('login')}
         activeCategory={activeCategory}
         setActiveCategory={setActiveCategory}
+        priceRange={priceRange}
+        setPriceRange={setPriceRange}
         onOpenServiceModal={() => setIsServiceModalOpen(true)}
         currentUser={currentUser}
         onLogout={handleLogout}
-        onNavigateTab={(tab) => {
-          // Yêu cầu 1: Nếu user thường cố tình vào đường dẫn/tab admin, tự động điều hướng về trang chủ
-          if (tab === 'admin' && currentUser?.role !== 'admin') {
-            showToast('⛔ Bạn không có quyền truy cập Trang Quản Trị! (Chỉ dành cho Admin)');
-            setCurrentTab('home');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            return;
-          }
-          setCurrentTab(tab);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
+        onNavigateTab={navigateToTab}
         currentTab={currentTab}
       />
 
@@ -712,59 +730,88 @@ export default function App() {
       {currentTab === 'product-detail' && (
         <ProductDetail
           product={selectedProduct}
-          onBack={() => setCurrentTab('home')}
+          onBack={() => navigateToTab('home')}
           onAddToCart={handleAddToCart}
           onBuyNow={handleBuyNow}
         />
       )}
 
-      {/* VIEW 3: THANH TOÁN (Hiển) */}
+      {/* VIEW 3: THANH TOÁN (Hiển - Ép buộc đăng nhập mới được đặt hàng) */}
       {currentTab === 'checkout' && (
-        <div className="container" style={{ padding: '40px 20px 80px' }}>
-          <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 30px' }}>
-            <h2 className="section-main-heading">
-              Thanh Toán & <span>Đón Bé Về Nhà</span>
-            </h2>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '16px' }}>
-              <button
-                className={`tab-btn ${checkoutStep === 1 ? 'active' : ''}`}
-                onClick={() => setCheckoutStep(1)}
-              >
-                1. Thông tin giao nhận
-              </button>
-              <button
-                className={`tab-btn ${checkoutStep === 2 ? 'active' : ''}`}
-                onClick={() => setCheckoutStep(2)}
-              >
-                2. Phương thức thanh toán
-              </button>
+        !currentUser ? (
+          <div className="container" style={{ padding: '80px 20px', textAlign: 'center', maxWidth: '520px' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🔒</div>
+            <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#1e293b' }}>
+              Vui Lòng Đăng Nhập Để Thanh Toán
+            </h3>
+            <p style={{ color: '#64748b', marginTop: '8px', marginBottom: '20px' }}>
+              Để bảo vệ quyền lợi bảo hành thú cưng và theo dõi đơn hàng, bạn cần đăng nhập tài khoản trước khi đặt hàng.
+            </p>
+            <button
+              type="button"
+              className="btn-primary-cta"
+              onClick={() => {
+                setRedirectAfterLogin('checkout');
+                openLoginPage('login');
+              }}
+            >
+              🔐 Đăng Nhập Ngay
+            </button>
+          </div>
+        ) : (
+          <div className="container" style={{ padding: '40px 20px 80px' }}>
+            <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 30px' }}>
+              <h2 className="section-main-heading">
+                Thanh Toán & <span>Đón Bé Về Nhà</span>
+              </h2>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '16px' }}>
+                <button
+                  className={`tab-btn ${checkoutStep === 1 ? 'active' : ''}`}
+                  onClick={() => setCheckoutStep(1)}
+                >
+                  1. Thông tin giao nhận
+                </button>
+                <button
+                  className={`tab-btn ${checkoutStep === 2 ? 'active' : ''}`}
+                  onClick={() => setCheckoutStep(2)}
+                >
+                  2. Phương thức thanh toán
+                </button>
+              </div>
+            </div>
+
+            <div style={{ maxWidth: '780px', margin: '0 auto' }}>
+              {checkoutStep === 1 ? (
+                <CheckoutForm
+                  formData={customerInfo}
+                  setFormData={setCustomerInfo}
+                  onNextStep={() => setCheckoutStep(2)}
+                />
+              ) : (
+                <PaymentMethods
+                  cartItems={cartItems}
+                  customerInfo={customerInfo}
+                  onConfirmOrder={handleConfirmOrder}
+                  onBackToForm={() => setCheckoutStep(1)}
+                  onRequireLogin={() => {
+                    showToast('🔒 Vui lòng đăng nhập tài khoản để đặt hàng!');
+                    setRedirectAfterLogin('checkout');
+                    openLoginPage('login');
+                  }}
+                />
+              )}
             </div>
           </div>
-
-          <div style={{ maxWidth: '780px', margin: '0 auto' }}>
-            {checkoutStep === 1 ? (
-              <CheckoutForm
-                formData={customerInfo}
-                setFormData={setCustomerInfo}
-                onNextStep={() => setCheckoutStep(2)}
-              />
-            ) : (
-              <PaymentMethods
-                cartItems={cartItems}
-                customerInfo={customerInfo}
-                onConfirmOrder={handleConfirmOrder}
-                onBackToForm={() => setCheckoutStep(1)}
-              />
-            )}
-          </div>
-        </div>
+        )
       )}
 
-      {/* VIEW 4: TRA CỨU ĐƠN HÀNG (Vương & Đồng bộ Admin) */}
+      {/* VIEW 4: TRA CỨU ĐƠN HÀNG (Vương & Đồng bộ StoreContext) */}
       {currentTab === 'tracking' && (
         <TrackingTimeline
+          key={currentOrderTrackingId || 'tracking-view'}
           initialOrderId={currentOrderTrackingId}
-          orders={orders}
+          onGoShopping={scrollToProducts}
+          onNotify={showToast}
         />
       )}
 
@@ -772,13 +819,8 @@ export default function App() {
       {currentTab === 'admin' && (
         currentUser?.role === 'admin' ? (
           <AdminDashboard
-            products={products}
-            orders={orders}
-            users={users}
-            onUpdateOrderStatus={handleUpdateOrderStatus}
-            onAddProduct={handleAddProductAdmin}
-            onDeleteProduct={handleDeleteProductAdmin}
-            onBackToStore={() => setCurrentTab('home')}
+            onBackToStore={() => navigateToTab('home')}
+            onNotify={showToast}
           />
         ) : (
           <div className="container" style={{ padding: '80px 20px', textAlign: 'center' }}>
@@ -789,7 +831,7 @@ export default function App() {
             <p style={{ color: '#64748b', marginTop: '10px', maxWidth: '480px', margin: '10px auto 24px' }}>
               Chỉ tài khoản Quản trị viên (Admin) mới có quyền truy cập vào phân hệ này. Bạn đang đăng nhập với tài khoản người dùng thông thường hoặc chưa đăng nhập.
             </p>
-            <button className="btn-primary-cta" onClick={() => setCurrentTab('home')}>
+            <button className="btn-primary-cta" onClick={() => navigateToTab('home')}>
               ← Quay Về Trang Chủ
             </button>
           </div>
@@ -807,7 +849,7 @@ export default function App() {
               if (actionType === 'cart') {
                 setIsCartOpen(true);
               } else {
-                setCurrentTab('home');
+                navigateToTab('home');
                 scrollToProducts();
               }
             }}
@@ -820,7 +862,7 @@ export default function App() {
         <SizeCalculator
           onSelectRecommendedCategory={(cat) => {
             setActiveCategory(cat);
-            setCurrentTab('home');
+            navigateToTab('home');
             scrollToProducts();
           }}
         />
@@ -860,35 +902,52 @@ export default function App() {
 
       {/* Modal Đăng nhập / Đăng ký (Trâm & Phân quyền Role-based) */}
       {isAuthOpen && (
-        <div className="modal-overlay" onClick={() => setIsAuthOpen(false)}>
+        <div className="modal-overlay" onClick={closeAuthModal}>
           {authMode === 'login' ? (
             <Login
-              users={users}
               onLoginSuccess={(user) => {
-                setCurrentUser(user);
+                syncCustomerInfoFromUser(user);
                 setIsAuthOpen(false);
                 showToast(
                   `🎉 Xin chào, ${user.name}! Đăng nhập thành công (${
                     user.role === 'admin' ? '👑 Quản Trị Viên' : 'Khách Hàng'
                   }).`
                 );
+                if (redirectAfterLogin) {
+                  const target = redirectAfterLogin;
+                  setRedirectAfterLogin(null);
+                  setCurrentTab(target);
+                  window.history.replaceState(null, '', getPathFromTab(target));
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                  const backPath = getPathFromTab(currentTab);
+                  window.history.replaceState(null, '', backPath);
+                }
               }}
-              onSwitchToRegister={() => setAuthMode('register')}
-              onClose={() => setIsAuthOpen(false)}
+              onSwitchToRegister={() => openLoginPage('register')}
+              onClose={closeAuthModal}
             />
           ) : (
             <Register
               onRegisterSuccess={(newUser) => {
-                // Yêu cầu 1: Lưu tài khoản mới đăng ký với role: "user"
-                setUsers((prev) => [newUser, ...prev]);
-                setCurrentUser(newUser);
+                syncCustomerInfoFromUser(newUser);
                 setIsAuthOpen(false);
                 showToast(
                   `🎉 Chúc mừng ${newUser.name} đã đăng ký tài khoản thành công với vai trò: Khách Hàng (User)!`
                 );
+                if (redirectAfterLogin) {
+                  const target = redirectAfterLogin;
+                  setRedirectAfterLogin(null);
+                  setCurrentTab(target);
+                  window.history.replaceState(null, '', getPathFromTab(target));
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                  const backPath = getPathFromTab(currentTab);
+                  window.history.replaceState(null, '', backPath);
+                }
               }}
-              onSwitchToLogin={() => setAuthMode('login')}
-              onClose={() => setIsAuthOpen(false)}
+              onSwitchToLogin={() => openLoginPage('login')}
+              onClose={closeAuthModal}
             />
           )}
         </div>

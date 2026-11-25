@@ -1,8 +1,10 @@
 // src/pages/Auth/Login.jsx
-// Nhiệm vụ: Trâm & Nhóm - Phân hệ Xác thực & Đăng nhập (Role-based Authentication)
+// Nhiệm vụ: Trâm & Nhóm - Phân hệ Xác thực & Đăng nhập kết nối StoreContext
 import { useState } from 'react';
+import { useStore } from '../../context/StoreContext';
 
-export default function Login({ onLoginSuccess, onSwitchToRegister, onClose, users = [] }) {
+export default function Login({ onLoginSuccess, onSwitchToRegister, onClose }) {
+  const { login, loginSocial } = useStore();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
@@ -19,65 +21,22 @@ export default function Login({ onLoginSuccess, onSwitchToRegister, onClose, use
     e.preventDefault();
     setErrorMessage('');
 
-    const cleanId = identifier.trim().toLowerCase();
-
-    // 1. Kiểm tra tài khoản Admin mặc định theo yêu cầu đề bài
-    if (cleanId === 'admin@petcare.com' && password === 'admin123') {
-      if (onLoginSuccess) {
-        onLoginSuccess({
-          name: 'Quản Trị Viên (Admin)',
-          email: 'admin@petcare.com',
-          role: 'admin',
-          phone: '1900 8899',
-        });
-      }
+    const result = login(identifier, password);
+    if (!result.ok) {
+      setErrorMessage(result.message);
       return;
     }
 
-    // 2. Tìm kiếm trong danh sách users (tài khoản đã đăng ký hoặc mẫu)
-    const matchedUser = users.find(
-      (u) =>
-        (u.email?.toLowerCase() === cleanId || u.phone === cleanId) &&
-        u.password === password
-    );
-
-    if (matchedUser) {
-      if (onLoginSuccess) {
-        onLoginSuccess({
-          name: matchedUser.name,
-          email: matchedUser.email,
-          role: matchedUser.role || 'user',
-          phone: matchedUser.phone,
-        });
-      }
-      return;
+    if (onLoginSuccess) {
+      onLoginSuccess(result.user);
     }
+  };
 
-    // 3. Nếu không tìm thấy hoặc mật khẩu sai
-    // Cho phép đăng nhập linh hoạt nếu người dùng nhập email/phone hợp lệ (mặc định role user)
-    // nhưng nếu cố tình nhập admin@petcare.com mà sai pass thì báo lỗi
-    if (cleanId === 'admin@petcare.com') {
-      setErrorMessage('Mật khẩu tài khoản Admin không đúng! (Mặc định: admin123)');
-      return;
+  const handleSocial = (provider) => {
+    const result = loginSocial(provider);
+    if (result.ok && onLoginSuccess) {
+      onLoginSuccess(result.user);
     }
-
-    if (cleanId && password.length >= 6) {
-      // Đăng nhập thành công với vai trò user
-      const displayName = cleanId.includes('@')
-        ? cleanId.split('@')[0]
-        : `Khách hàng ${cleanId.slice(-4)}`;
-      if (onLoginSuccess) {
-        onLoginSuccess({
-          name: displayName,
-          email: cleanId.includes('@') ? cleanId : `${cleanId}@petcare.local`,
-          role: 'user',
-          phone: !cleanId.includes('@') ? cleanId : '',
-        });
-      }
-      return;
-    }
-
-    setErrorMessage('Email/Số điện thoại hoặc mật khẩu không hợp lệ (tối thiểu 6 ký tự)!');
   };
 
   return (
@@ -104,10 +63,10 @@ export default function Login({ onLoginSuccess, onSwitchToRegister, onClose, use
 
       <h3 className="modal-title">Chào Mừng Trở Lại! 🐾</h3>
       <p className="modal-subtitle">
-        Đăng nhập để xem giỏ hàng, tra cứu đơn hàng và quản lý tài khoản
+        Đăng nhập để đặt mua thú cưng, theo dõi đơn hàng và tích điểm đổi quà
       </p>
 
-      {/* Hộp gợi ý tài khoản Admin theo yêu cầu */}
+      {/* Hộp gợi ý tài khoản Admin mặc định */}
       <div
         style={{
           background: '#fff7ed',
@@ -212,14 +171,7 @@ export default function Login({ onLoginSuccess, onSwitchToRegister, onClose, use
       <div style={{ display: 'flex', gap: '10px' }}>
         <button
           type="button"
-          onClick={() =>
-            onLoginSuccess &&
-            onLoginSuccess({
-              name: 'Google Member',
-              email: 'google_user@gmail.com',
-              role: 'user',
-            })
-          }
+          onClick={() => handleSocial('google')}
           className="btn-secondary-cta"
           style={{ flex: 1, padding: '10px', fontSize: '0.88rem' }}
         >
@@ -227,14 +179,7 @@ export default function Login({ onLoginSuccess, onSwitchToRegister, onClose, use
         </button>
         <button
           type="button"
-          onClick={() =>
-            onLoginSuccess &&
-            onLoginSuccess({
-              name: 'Facebook Member',
-              email: 'facebook_user@petcare.vn',
-              role: 'user',
-            })
-          }
+          onClick={() => handleSocial('facebook')}
           className="btn-secondary-cta"
           style={{ flex: 1, padding: '10px', fontSize: '0.88rem' }}
         >

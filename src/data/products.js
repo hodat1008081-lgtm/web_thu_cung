@@ -8,7 +8,9 @@ export const INITIAL_PRODUCTS = [
     category: 'dog',
     categoryName: 'Chó cảnh thuần chủng',
     price: 4800000,
+    costPrice: 3360000,
     originalPrice: 5500000,
+    stock: 4,
     rating: 5.0,
     reviewsCount: 42,
     badge: '-13%',
@@ -27,7 +29,9 @@ export const INITIAL_PRODUCTS = [
     category: 'cat',
     categoryName: 'Mèo cảnh quý tộc',
     price: 5500000,
+    costPrice: 3850000,
     originalPrice: 6200000,
+    stock: 6,
     rating: 5.0,
     reviewsCount: 65,
     badge: 'Hot Bestseller',
@@ -46,7 +50,9 @@ export const INITIAL_PRODUCTS = [
     category: 'dog',
     categoryName: 'Chó cảnh thuần chủng',
     price: 8500000,
+    costPrice: 5950000,
     originalPrice: 9800000,
+    stock: 3,
     rating: 4.9,
     reviewsCount: 38,
     badge: 'Thuần chủng',
@@ -65,7 +71,9 @@ export const INITIAL_PRODUCTS = [
     category: 'cat',
     categoryName: 'Mèo cảnh quý tộc',
     price: 11500000,
+    costPrice: 8050000,
     originalPrice: 13000000,
+    stock: 0,
     rating: 5.0,
     reviewsCount: 18,
     badge: 'Mới về',
@@ -84,7 +92,9 @@ export const INITIAL_PRODUCTS = [
     category: 'dog',
     categoryName: 'Chó cảnh thuần chủng',
     price: 7200000,
+    costPrice: 5040000,
     originalPrice: 8000000,
+    stock: 5,
     rating: 5.0,
     reviewsCount: 56,
     badge: '-10%',
@@ -103,7 +113,9 @@ export const INITIAL_PRODUCTS = [
     category: 'cat',
     categoryName: 'Mèo cảnh quý tộc',
     price: 9800000,
+    costPrice: 6860000,
     originalPrice: 11000000,
+    stock: 2,
     rating: 4.9,
     reviewsCount: 31,
     badge: 'Hot',
@@ -122,7 +134,9 @@ export const INITIAL_PRODUCTS = [
     category: 'food',
     categoryName: 'Thức ăn & Dinh dưỡng',
     price: 420000,
+    costPrice: 294000,
     originalPrice: 480000,
+    stock: 25,
     rating: 5.0,
     reviewsCount: 128,
     badge: '-12%',
@@ -141,7 +155,9 @@ export const INITIAL_PRODUCTS = [
     category: 'accessory',
     categoryName: 'Phụ kiện & Đồ chơi',
     price: 690000,
+    costPrice: 483000,
     originalPrice: 850000,
+    stock: 8,
     rating: 4.9,
     reviewsCount: 46,
     badge: '-19%',
@@ -161,7 +177,9 @@ export const INITIAL_PRODUCTS = [
     categoryName: 'Phụ kiện thời trang',
     accessoryType: 'collar',
     price: 95000,
+    costPrice: 66500,
     originalPrice: 120000,
+    stock: 15,
     rating: 4.9,
     reviewsCount: 38,
     badge: 'Mẫu mới',
@@ -191,7 +209,9 @@ export const INITIAL_PRODUCTS = [
     categoryName: 'Phụ kiện cho mèo',
     accessoryType: 'collar',
     price: 65000,
+    costPrice: 45500,
     originalPrice: 85000,
+    stock: 20,
     rating: 5.0,
     reviewsCount: 54,
     badge: 'Bán chạy',
@@ -219,7 +239,9 @@ export const INITIAL_PRODUCTS = [
     categoryName: 'Phụ kiện dạo phố',
     accessoryType: 'harness',
     price: 135000,
+    costPrice: 94500,
     originalPrice: 170000,
+    stock: 12,
     rating: 4.9,
     reviewsCount: 82,
     badge: 'Hot deal',
@@ -249,7 +271,9 @@ export const INITIAL_PRODUCTS = [
     categoryName: 'Thời trang thú cưng',
     accessoryType: 'clothing',
     price: 110000,
+    costPrice: 77000,
     originalPrice: 145000,
+    stock: 18,
     rating: 4.9,
     reviewsCount: 76,
     badge: '-24%',
@@ -273,6 +297,27 @@ export const INITIAL_PRODUCTS = [
     ],
   },
 ];
+
+// Chuẩn hóa sản phẩm (đảm bảo luôn có stock và costPrice mặc định 70% giá bán)
+export const normalizeProduct = (product) => {
+  if (!product || typeof product !== 'object') return null;
+  const price = Number(product.price) || 0;
+  const costPrice =
+    typeof product.costPrice === 'number' && !Number.isNaN(product.costPrice) && product.costPrice >= 0
+      ? product.costPrice
+      : Math.round(price * 0.7);
+  const stock =
+    typeof product.stock === 'number' && !Number.isNaN(product.stock) && product.stock >= 0
+      ? Math.floor(product.stock)
+      : 10;
+
+  return {
+    ...product,
+    price,
+    costPrice,
+    stock,
+  };
+};
 
 // Hàm định dạng tiền tệ VNĐ
 export const formatCurrency = (amount) => {

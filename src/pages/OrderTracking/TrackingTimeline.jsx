@@ -1,101 +1,47 @@
 // src/pages/OrderTracking/TrackingTimeline.jsx
-// Nhiệm vụ: Vương & Nhóm - Hệ thống theo dõi hành trình vận chuyển đồng bộ với Admin
-import { useState, useEffect } from 'react';
+// Nhiệm vụ: Vương & Nhóm - Theo dõi hành trình đơn hàng thực tế đồng bộ StoreContext & Hủy đơn hoàn kho
+import { useState } from 'react';
 import { formatCurrency } from '../../data/products';
+import { useStore } from '../../context/StoreContext';
 
-export default function TrackingTimeline({ initialOrderId = 'PET-2026-8899', orders = [] }) {
+export default function TrackingTimeline({ initialOrderId = '', onGoShopping, onNotify }) {
+  const { orders, currentUser, updateOrderStatus } = useStore();
   const [searchCode, setSearchCode] = useState(initialOrderId);
   const [activeOrderId, setActiveOrderId] = useState(initialOrderId);
   const [searchError, setSearchError] = useState(null);
 
-  // Cập nhật khi initialOrderId thay đổi (ví dụ khách vừa đặt hàng xong)
-  useEffect(() => {
-    if (initialOrderId) {
-      setSearchCode(initialOrderId);
-      setActiveOrderId(initialOrderId);
-      setSearchError(null);
-    }
-  }, [initialOrderId]);
+  // Lọc các đơn của user đang đăng nhập (hoặc toàn bộ nếu admin) để gợi ý nhanh
+  const userOrders =
+    currentUser?.role === 'admin'
+      ? orders
+      : currentUser
+      ? orders.filter(
+          (o) =>
+            o.userId === currentUser.id ||
+            (o.customerEmail && o.customerEmail.toLowerCase() === currentUser.email.toLowerCase())
+        )
+      : orders;
 
-  // Tìm đơn hàng hiện tại trong danh sách orders
   const currentOrder =
-    orders.find((o) => o.id?.toLowerCase() === activeOrderId?.toLowerCase()) ||
-    orders[0] || {
-      id: initialOrderId,
-      petName: 'Chó Poodle Teacup Nâu Đỏ Siêu Xinh',
-      customerName: 'Trần Minh Hiển',
-      phone: '0988 666 888',
-      deliveryAddress: '456 Nguyễn Thị Minh Khai, Phường 5, Quận 3, TP. Hồ Chí Minh',
-      estimatedArrival: '15:30 Hôm nay (Khoảng 45 phút nữa)',
-      driverName: 'Nguyễn Văn Hùng (Tài xế chuyên dụng PetCare)',
-      driverPhone: '0912 345 678',
-      driverVehicle: 'Xe ô tô bán tải chuyên dụng máy lạnh (Biển số: 51A-987.65)',
-      status: 'shipping',
-    };
+    orders.find((o) => o.id?.toLowerCase() === (activeOrderId || '').toLowerCase()) ||
+    userOrders[0] ||
+    orders[0] ||
+    null;
 
-  // Xác định bước tiến trình (step 1 -> 4) theo trạng thái thực tế do Admin quản lý
   const getTimelineStep = (status) => {
     switch (status) {
-      case 'pending':
-        return 1; // Chờ duyệt / tiếp nhận
-      case 'shipping':
-        return 3; // Đang giao trên xe điều hòa
-      case 'completed':
-        return 4; // Bàn giao hoàn tất
-      case 'cancelled':
-        return 0; // Đã hủy
+      case 'Chờ xác nhận':
+        return 1;
+      case 'Đang giao':
+        return 3;
+      case 'Hoàn thành':
+        return 4;
+      case 'Đã hủy':
+        return 0;
       default:
-        return 2;
+        return 1;
     }
   };
-
-  const currentStep = getTimelineStep(currentOrder.status);
-
-  // 4 Bước hành trình tiêu chuẩn vận chuyển thú cưng
-  const steps = [
-    {
-      step: 1,
-      title: 'Đơn Hàng Đã Được Tiếp Nhận & Xác Nhận',
-      time: currentOrder.status === 'pending' ? 'Đang chờ Admin duyệt...' : '09:00 AM - Hôm nay',
-      desc:
-        currentOrder.status === 'pending'
-          ? 'Hệ thống đã ghi nhận đơn. Chuyên viên PetCare đang kiểm tra thông tin và chuẩn bị hồ sơ xuất chuồng.'
-          : 'Nhân viên tư vấn đã gọi điện xác nhận và kiểm tra thông tin người nhận an toàn.',
-      icon: '📝',
-    },
-    {
-      step: 2,
-      title: 'Bác Sĩ Thú Y Kiểm Dịch Xuất Chuồng',
-      time: currentStep >= 2 ? '10:30 AM - Hôm nay' : 'Dự kiến sau khi xác nhận đơn',
-      desc:
-        currentStep >= 2
-          ? 'Xét nghiệm Parvo, Care âm tính 100%, đo thân nhiệt 38.5°C, vệ sinh tai lông sạch sẽ.'
-          : 'Bác sĩ thú y sẽ kiểm tra sức khỏe tổng quát, tiêm ngừa nhắc lại trước khi cho bé lên xe.',
-      icon: '🩺',
-    },
-    {
-      step: 3,
-      title: 'Đang Vận Chuyển Trên Xe Chuyên Dụng Máy Lạnh',
-      time: currentOrder.status === 'shipping' ? 'Đang diễn ra (Thời gian thực)' : currentStep > 3 ? 'Đã hoàn tất vận chuyển' : 'Dự kiến trong ngày',
-      desc:
-        currentOrder.status === 'shipping'
-          ? 'Bé cưng đang ở trong lồng vận chuyển lót đệm ấm, bật điều hòa 24°C, có bình nước tự động và đồ chơi.'
-          : currentStep > 3
-          ? 'Chuyến xe chuyên dụng đã đưa bé đến đúng địa chỉ nhận an toàn tuyệt đối.'
-          : 'Xe chuyên dụng máy lạnh sẽ đưa bé trực tiếp từ trại sinh sản đến tận tay khách hàng.',
-      icon: '🚐',
-    },
-    {
-      step: 4,
-      title: 'Bàn Giao & Hướng Dẫn Chăm Sóc Tại Nhà',
-      time: currentOrder.status === 'completed' ? 'Hoàn tất bàn giao' : currentOrder.estimatedArrival || 'Dự kiến hôm nay',
-      desc:
-        currentOrder.status === 'completed'
-          ? 'Đã bàn giao sổ sức khỏe, hợp đồng bảo hành 30 ngày và thức ăn ăn dặm cho bé.'
-          : 'Bàn giao sổ sức khỏe, hợp đồng bảo hành 30 ngày và tài liệu hướng dẫn pha sữa/ăn hạt cho cún mèo.',
-      icon: '🏠',
-    },
-  ];
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -111,9 +57,91 @@ export default function TrackingTimeline({ initialOrderId = 'PET-2026-8899', ord
     if (found) {
       setActiveOrderId(found.id);
     } else {
-      setSearchError(`Không tìm thấy đơn hàng "${searchCode}". Vui lòng kiểm tra lại mã vận đơn!`);
+      setSearchError(`Không tìm thấy đơn hàng "${searchCode}" trên hệ thống.`);
     }
   };
+
+  const handleCustomerCancelOrder = () => {
+    if (!currentOrder) return;
+    const confirmed = window.confirm(
+      `Bạn có chắc chắn muốn hủy đơn hàng ${currentOrder.id}? Số lượng sản phẩm sẽ được tự động hoàn lại vào kho.`
+    );
+    if (!confirmed) return;
+
+    const res = updateOrderStatus(currentOrder.id, 'Đã hủy');
+    if (onNotify && res?.message) {
+      onNotify(res.message);
+    }
+  };
+
+  // Trạng thái rỗng khi chưa có đơn hàng thực tế nào
+  if (!currentOrder) {
+    return (
+      <div className="container" style={{ padding: '60px 20px 80px', textAlign: 'center', maxWidth: '640px' }}>
+        <div className="section-tagline" style={{ justifyContent: 'center' }}>
+          <span>📦</span> Tra Cứu Đơn Hàng
+        </div>
+        <h2 className="section-main-heading">
+          Chưa Có Đơn Hàng <span>Nào Được Tạo</span>
+        </h2>
+        <p style={{ color: '#64748b', marginTop: '12px', marginBottom: '26px', lineHeight: '1.6' }}>
+          Hệ thống hiện chưa ghi nhận đơn hàng nào từ tài khoản của bạn. Hãy lựa chọn thú cưng hoặc phụ kiện yêu thích và hoàn tất đặt hàng để theo dõi hành trình tại đây nhé!
+        </p>
+        {onGoShopping && (
+          <button type="button" className="btn-primary-cta" onClick={onGoShopping}>
+            🐾 Khám Phá Sản Phẩm Ngay
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  const currentStep = getTimelineStep(currentOrder.status);
+
+  const steps = [
+    {
+      step: 1,
+      title: 'Đơn Hàng Đã Tiếp Nhận (Chờ xác nhận)',
+      time: currentOrder.status === 'Chờ xác nhận' ? 'Đang chờ Admin xác nhận...' : currentOrder.createdAt || 'Đã xác nhận',
+      desc:
+        currentOrder.status === 'Chờ xác nhận'
+          ? 'Hệ thống đã ghi nhận đơn và giữ tồn kho cho bạn. Admin đang kiểm tra hồ sơ xuất chuồng.'
+          : 'Nhân viên tư vấn đã xác nhận đơn hàng và thông tin nhận hàng.',
+      icon: '📝',
+    },
+    {
+      step: 2,
+      title: 'Bác Sĩ Thú Y Kiểm Dịch & Đóng Gói',
+      time: currentStep >= 2 ? 'Đã hoàn tất kiểm tra' : 'Dự kiến sau khi xác nhận đơn',
+      desc:
+        currentStep >= 2
+          ? 'Đã kiểm tra sức khỏe tổng quát, vệ sinh sạch sẽ và chuẩn bị chuồng lót ấm.'
+          : 'Chuyên viên sẽ kiểm tra tình trạng sức khỏe / chất lượng sản phẩm trước khi giao.',
+      icon: '🩺',
+    },
+    {
+      step: 3,
+      title: 'Đang Vận Chuyển Trên Xe Chuyên Dụng',
+      time: currentOrder.status === 'Đang giao' ? 'Đang giao hàng (Thời gian thực)' : currentStep > 3 ? 'Đã giao tới nơi' : 'Chờ xuất phát',
+      desc:
+        currentOrder.status === 'Đang giao'
+          ? 'Tài xế chuyên trách PetCare Joy đang trên đường giao đơn hàng tới địa chỉ của bạn.'
+          : currentStep > 3
+          ? 'Chuyến xe chuyên dụng đã đưa đơn hàng đến đúng địa chỉ nhận an toàn.'
+          : 'Xe chuyên dụng máy lạnh sẽ vận chuyển an toàn đến tận tay khách hàng.',
+      icon: '🚐',
+    },
+    {
+      step: 4,
+      title: 'Bàn Giao & Hoàn Thành Đơn Hàng',
+      time: currentOrder.status === 'Hoàn thành' ? 'Hoàn tất bàn giao ✓' : 'Dự kiến khi nhận hàng',
+      desc:
+        currentOrder.status === 'Hoàn thành'
+          ? 'Đơn hàng đã được giao thành công và hoàn tất thanh toán. Cảm ơn bạn đã tin tưởng PetCare Joy!'
+          : 'Kiểm tra sức khỏe bé cưng / sản phẩm, nhận sổ bảo hành 30 ngày và hoàn tất đơn.',
+      icon: '🏠',
+    },
+  ];
 
   return (
     <div className="container" style={{ padding: '40px 20px 80px' }}>
@@ -126,7 +154,7 @@ export default function TrackingTimeline({ initialOrderId = 'PET-2026-8899', ord
           Theo Dõi Hành Trình <span>Thú Cưng & Đơn Hàng</span>
         </h2>
         <p style={{ color: '#64748b', marginTop: '10px', fontSize: '0.95rem' }}>
-          Dữ liệu hành trình được đồng bộ thời gian thực theo từng thao tác duyệt xuất chuồng của Admin.
+          Trạng thái đơn hàng được đồng bộ trực tiếp theo thời gian thực với hệ thống quản trị Admin.
         </p>
 
         {/* Khung tra cứu */}
@@ -145,7 +173,7 @@ export default function TrackingTimeline({ initialOrderId = 'PET-2026-8899', ord
           <input
             type="text"
             className="search-input"
-            placeholder="Nhập mã đơn hàng (VD: PET-2026-8899, PET-2026-5503)..."
+            placeholder="Nhập mã đơn hàng của bạn (VD: PET-123456)..."
             value={searchCode}
             onChange={(e) => setSearchCode(e.target.value)}
           />
@@ -160,11 +188,11 @@ export default function TrackingTimeline({ initialOrderId = 'PET-2026-8899', ord
           </div>
         )}
 
-        {/* Danh sách mã đơn gợi ý tra cứu nhanh */}
+        {/* Danh sách các đơn thực tế để chuyển nhanh */}
         {orders.length > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '14px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Mã đơn của bạn:</span>
-            {orders.slice(0, 4).map((o) => (
+            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Đơn hàng gần đây:</span>
+            {orders.slice(0, 5).map((o) => (
               <button
                 key={o.id}
                 type="button"
@@ -174,17 +202,17 @@ export default function TrackingTimeline({ initialOrderId = 'PET-2026-8899', ord
                   setSearchError(null);
                 }}
                 style={{
-                  background: activeOrderId === o.id ? '#ff6b35' : '#f1f5f9',
-                  color: activeOrderId === o.id ? '#fff' : '#475569',
+                  background: currentOrder.id === o.id ? '#ff6b35' : '#f1f5f9',
+                  color: currentOrder.id === o.id ? '#fff' : '#475569',
                   border: 'none',
-                  padding: '3px 10px',
+                  padding: '4px 12px',
                   borderRadius: '20px',
                   fontSize: '0.78rem',
                   fontWeight: '700',
                   cursor: 'pointer',
                 }}
               >
-                {o.id} ({o.status === 'pending' ? 'Chờ duyệt' : o.status === 'shipping' ? 'Đang giao' : 'Hoàn thành'})
+                {o.id} ({o.status})
               </button>
             ))}
           </div>
@@ -192,7 +220,7 @@ export default function TrackingTimeline({ initialOrderId = 'PET-2026-8899', ord
       </div>
 
       {/* Cảnh báo nếu đơn bị hủy */}
-      {currentOrder.status === 'cancelled' && (
+      {currentOrder.status === 'Đã hủy' && (
         <div
           style={{
             background: '#fee2e2',
@@ -208,15 +236,15 @@ export default function TrackingTimeline({ initialOrderId = 'PET-2026-8899', ord
         >
           <span style={{ fontSize: '1.8rem' }}>⚠️</span>
           <div>
-            <strong style={{ fontSize: '1rem' }}>Đơn hàng này đã bị hủy!</strong>
+            <strong style={{ fontSize: '1rem' }}>Đơn hàng {currentOrder.id} đã bị hủy!</strong>
             <p style={{ fontSize: '0.88rem', margin: '4px 0 0' }}>
-              Đơn hàng {currentOrder.id} đã dừng tiến trình vận chuyển. Nếu có bất kỳ thắc mắc nào, vui lòng gọi hotline <strong>1900 8899</strong> để được hỗ trợ ngay.
+              Toàn bộ số lượng sản phẩm trong đơn đã được tự động hoàn trả lại vào kho hàng. Vui lòng liên hệ hotline <strong>1900 8899</strong> nếu cần hỗ trợ thêm.
             </p>
           </div>
         </div>
       )}
 
-      {/* Khung nội dung chi tiết theo dõi đơn */}
+      {/* Khung chi tiết đơn hàng */}
       <div
         style={{
           background: '#ffffff',
@@ -229,29 +257,29 @@ export default function TrackingTimeline({ initialOrderId = 'PET-2026-8899', ord
           gap: '40px',
         }}
       >
-        {/* Cột trái: Timeline hành trình thực tế */}
+        {/* Cột trái: Timeline */}
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '10px' }}>
             <h3 style={{ fontSize: '1.3rem', fontWeight: '800', color: '#1e293b' }}>
-              Hành Trình Giao Nhận Bé Cưng
+              Hành Trình Giao Nhận
             </h3>
-            {/* Badge trạng thái đồng bộ với Admin */}
-            {currentOrder.status === 'pending' && (
+
+            {currentOrder.status === 'Chờ xác nhận' && (
               <span style={{ color: '#b45309', background: '#fef3c7', padding: '4px 12px', borderRadius: '20px', fontWeight: '800', fontSize: '0.8rem' }}>
                 ⏳ Chờ xác nhận
               </span>
             )}
-            {currentOrder.status === 'shipping' && (
+            {currentOrder.status === 'Đang giao' && (
               <span style={{ color: '#1d4ed8', background: '#dbeafe', padding: '4px 12px', borderRadius: '20px', fontWeight: '800', fontSize: '0.8rem' }}>
                 🚐 Đang giao hàng
               </span>
             )}
-            {currentOrder.status === 'completed' && (
+            {currentOrder.status === 'Hoàn thành' && (
               <span style={{ color: '#15803d', background: '#dcfce7', padding: '4px 12px', borderRadius: '20px', fontWeight: '800', fontSize: '0.8rem' }}>
-                ✓ Đã hoàn thành
+                ✓ Hoàn thành
               </span>
             )}
-            {currentOrder.status === 'cancelled' && (
+            {currentOrder.status === 'Đã hủy' && (
               <span style={{ color: '#b91c1c', background: '#fee2e2', padding: '4px 12px', borderRadius: '20px', fontWeight: '800', fontSize: '0.8rem' }}>
                 ✕ Đã hủy
               </span>
@@ -259,7 +287,6 @@ export default function TrackingTimeline({ initialOrderId = 'PET-2026-8899', ord
           </div>
 
           <div style={{ position: 'relative', paddingLeft: '32px' }}>
-            {/* Đường line nối */}
             <div
               style={{
                 position: 'absolute',
@@ -272,12 +299,11 @@ export default function TrackingTimeline({ initialOrderId = 'PET-2026-8899', ord
             ></div>
 
             {steps.map((s) => {
-              const isDone = currentStep > s.step || currentOrder.status === 'completed';
-              const isCurrent = currentStep === s.step && currentOrder.status !== 'completed';
+              const isDone = currentStep > s.step || currentOrder.status === 'Hoàn thành';
+              const isCurrent = currentStep === s.step && currentOrder.status !== 'Hoàn thành';
 
               return (
                 <div key={s.step} style={{ position: 'relative', marginBottom: '28px' }}>
-                  {/* Icon nút tròn trên timeline */}
                   <div
                     style={{
                       position: 'absolute',
@@ -319,7 +345,7 @@ export default function TrackingTimeline({ initialOrderId = 'PET-2026-8899', ord
           </div>
         </div>
 
-        {/* Cột phải: Thông tin đơn hàng & Tài xế */}
+        {/* Cột phải: Thông tin chi tiết đơn hàng & nút Hủy đơn cho Khách */}
         <div>
           <div
             style={{
@@ -335,18 +361,41 @@ export default function TrackingTimeline({ initialOrderId = 'PET-2026-8899', ord
                 MÃ ĐƠN: {currentOrder.id}
               </span>
               <span style={{ fontSize: '0.78rem', color: '#64748b', background: '#fff', padding: '2px 8px', borderRadius: '6px', border: '1px solid #ffd8cc' }}>
-                {currentOrder.createdAt || 'Hôm nay'}
+                {currentOrder.createdAt}
               </span>
             </div>
 
-            <div style={{ marginBottom: '12px' }}>
-              <span style={{ fontSize: '0.82rem', color: '#94a3b8', display: 'block' }}>Bé cưng / Sản phẩm đặt mua:</span>
-              <strong style={{ fontSize: '1rem', color: '#1e293b' }}>
-                {currentOrder.petName || (currentOrder.items && currentOrder.items.map((it) => it.name).join(', '))}
-              </strong>
+            {/* Danh sách sản phẩm thật trong đơn */}
+            <div style={{ marginBottom: '14px' }}>
+              <span style={{ fontSize: '0.82rem', color: '#94a3b8', display: 'block', marginBottom: '6px' }}>
+                Danh sách sản phẩm đã đặt:
+              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {(currentOrder.items || []).map((item, idx) => (
+                  <div
+                    key={`${item.id}_${idx}`}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      fontSize: '0.86rem',
+                      background: '#ffffff',
+                      padding: '8px 10px',
+                      borderRadius: '10px',
+                      border: '1px solid #fed7aa',
+                    }}
+                  >
+                    <span style={{ fontWeight: '700', color: '#1e293b' }}>
+                      {item.name} {item.selectedSize ? `(Size ${item.selectedSize})` : ''} × {item.quantity}
+                    </span>
+                    <strong style={{ color: '#ff6b35' }}>
+                      {formatCurrency((item.price || 0) * (item.quantity || 1))}
+                    </strong>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div style={{ marginBottom: '12px' }}>
+            <div style={{ marginBottom: '10px' }}>
               <span style={{ fontSize: '0.82rem', color: '#94a3b8', display: 'block' }}>Người nhận:</span>
               <strong style={{ color: '#1e293b' }}>
                 {currentOrder.customerName} - {currentOrder.phone}
@@ -360,34 +409,32 @@ export default function TrackingTimeline({ initialOrderId = 'PET-2026-8899', ord
 
             <div style={{ marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed #fed7aa', paddingTop: '10px' }}>
               <span style={{ fontSize: '0.88rem', color: '#64748b' }}>Tổng thanh toán:</span>
-              <strong style={{ fontSize: '1.15rem', color: '#ff6b35' }}>
+              <strong style={{ fontSize: '1.2rem', color: '#ff6b35' }}>
                 {formatCurrency(currentOrder.totalAmount || currentOrder.totalPrice || 0)}
               </strong>
             </div>
 
-            <div
-              style={{
-                background: '#ffffff',
-                padding: '12px 16px',
-                borderRadius: '12px',
-                border: '1px solid #fed7aa',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-              }}
-            >
-              <span style={{ fontSize: '1.4rem' }}>⏰</span>
-              <div>
-                <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Dự kiến tới nơi:</div>
-                <strong style={{ color: '#ff6b35', fontSize: '0.92rem' }}>
-                  {currentOrder.status === 'completed'
-                    ? 'Đã bàn giao thành công'
-                    : currentOrder.status === 'cancelled'
-                    ? 'Đơn hàng đã hủy'
-                    : currentOrder.estimatedArrival || 'Trong 45 phút nữa'}
-                </strong>
-              </div>
-            </div>
+            {/* Nút cho Khách hủy đơn hàng khi đang "Chờ xác nhận" (tự động hoàn kho) */}
+            {currentOrder.status === 'Chờ xác nhận' && (
+              <button
+                type="button"
+                onClick={handleCustomerCancelOrder}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: '12px',
+                  background: '#fee2e2',
+                  color: '#dc2626',
+                  border: '1.5px solid #fca5a5',
+                  fontWeight: '700',
+                  fontSize: '0.86rem',
+                  cursor: 'pointer',
+                  marginTop: '6px',
+                }}
+              >
+                ✕ Hủy Đơn Hàng Này (Hoàn lại tồn kho)
+              </button>
+            )}
           </div>
 
           {/* Khung liên hệ tài xế */}

@@ -1,8 +1,10 @@
 // src/pages/Auth/Register.jsx
 // Nhiệm vụ: Trâm & Nhóm - Phân hệ Đăng ký tài khoản thành viên (Mặc định role: "user")
 import { useState } from 'react';
+import { useStore } from '../../context/StoreContext';
 
 export default function Register({ onRegisterSuccess, onSwitchToLogin, onClose }) {
+  const { register } = useStore();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -28,19 +30,20 @@ export default function Register({ onRegisterSuccess, onSwitchToLogin, onClose }
       return;
     }
 
-    // Yêu cầu đề bài: "Khi người dùng đăng ký tài khoản mới qua Register, mặc định lưu thông tin người dùng với role: 'user'"
-    const newUser = {
-      id: `USR-${Date.now()}`,
-      name: fullName.trim(),
-      email: email.trim().toLowerCase(),
-      phone: phone.trim(),
+    const result = register({
+      name: fullName,
+      email,
+      phone,
       password,
-      role: 'user', // Mặc định role: "user" theo yêu cầu 1
-      createdAt: new Date().toLocaleDateString('vi-VN'),
-    };
+    });
+
+    if (!result.ok) {
+      setErrorMessage(result.message);
+      return;
+    }
 
     if (onRegisterSuccess) {
-      onRegisterSuccess(newUser);
+      onRegisterSuccess(result.user);
     }
   };
 
@@ -68,7 +71,7 @@ export default function Register({ onRegisterSuccess, onSwitchToLogin, onClose }
 
       <h3 className="modal-title">Gia Nhập PetCare Joy! 🐶</h3>
       <p className="modal-subtitle">
-        Tạo tài khoản thành viên để nhận voucher <strong>10%</strong> và tích điểm đổi quà
+        Tạo tài khoản thành viên để nhận voucher <strong>10%</strong> và đặt mua bé cưng
       </p>
 
       {errorMessage && (
@@ -168,7 +171,7 @@ export default function Register({ onRegisterSuccess, onSwitchToLogin, onClose }
         >
           <span>🛡️</span>
           <span>
-            Tài khoản mới được tạo với vai trò: <strong style={{ color: '#ff6b35' }}>Khách hàng (User)</strong>
+            Tài khoản mới được lưu với vai trò: <strong style={{ color: '#ff6b35' }}>Khách hàng (User)</strong>
           </span>
         </div>
 

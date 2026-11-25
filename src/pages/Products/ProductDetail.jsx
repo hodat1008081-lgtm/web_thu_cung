@@ -3,9 +3,21 @@
 import { useState, useMemo } from 'react';
 import { formatCurrency } from '../../data/products';
 import { getProductSizeData, matchSizeForProduct, ACCESSORY_PRODUCTS } from './productSizeData';
+import { useStore } from '../../context/StoreContext';
 import './ProductDetail.css';
 
-export default function ProductDetail({ product, onBack, onAddToCart, onBuyNow, onOpenSizeAdvisor }) {
+export default function ProductDetail({ product: initialProduct, onBack, onAddToCart, onBuyNow, onOpenSizeAdvisor }) {
+  const { products } = useStore();
+
+  // Luôn lấy dữ liệu sản phẩm mới nhất từ StoreContext để đồng bộ stock thời gian thực
+  const product = useMemo(() => {
+    if (!initialProduct) return null;
+    return products.find((p) => p.id === initialProduct.id) || initialProduct;
+  }, [products, initialProduct]);
+
+  const stock = typeof product?.stock === 'number' ? product.stock : 0;
+  const isSoldOut = stock <= 0;
+
   // Lấy dữ liệu kích thước của sản phẩm (nếu là phụ kiện có size)
   const productSizeInfo = useMemo(() => {
     if (!product) return null;
@@ -17,10 +29,11 @@ export default function ProductDetail({ product, onBack, onAddToCart, onBuyNow, 
     );
   }, [product]);
 
-  // State chọn size sản phẩm
+  // State chọn size & số lượng mua
   const [selectedSize, setSelectedSize] = useState(() => {
     return productSizeInfo?.sizes?.[0] || 'S';
   });
+  const [buyQty, setBuyQty] = useState(1);
 
   // State mở rộng bảng size chi tiết & công cụ tư vấn nhanh
   const [showFullTable, setShowFullTable] = useState(false);
@@ -48,27 +61,34 @@ export default function ProductDetail({ product, onBack, onAddToCart, onBuyNow, 
     setSelectedSize(cleanSize);
   };
 
-  // Xử lý thêm vào giỏ kèm size đã chọn
+  // Xử lý thêm vào giỏ kèm size & số lượng đã chọn
   const handleAddToCartWithSize = () => {
+    if (isSoldOut) return;
+    const safeQty = Math.min(Math.max(1, buyQty), stock);
     if (onAddToCart) {
       onAddToCart({
         ...product,
         selectedSize: productSizeInfo ? selectedSize : undefined,
+        quantity: safeQty,
       });
     }
   };
 
-  // Xử lý mua ngay kèm size đã chọn
+  // Xử lý mua ngay kèm size & số lượng đã chọn
   const handleBuyNowWithSize = () => {
+    if (isSoldOut) return;
+    const safeQty = Math.min(Math.max(1, buyQty), stock);
     if (onBuyNow) {
       onBuyNow({
         ...product,
         selectedSize: productSizeInfo ? selectedSize : undefined,
+        quantity: safeQty,
       });
     } else if (onAddToCart) {
       onAddToCart({
         ...product,
         selectedSize: productSizeInfo ? selectedSize : undefined,
+        quantity: safeQty,
       });
     }
   };
@@ -126,9 +146,45 @@ export default function ProductDetail({ product, onBack, onAddToCart, onBuyNow, 
             <img
               src={product.image}
               alt={product.name}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                filter: isSoldOut ? 'grayscale(45%)' : 'none',
+              }}
             />
-            {product.badge && (
+            {isSoldOut && (
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'rgba(15, 23, 42, 0.55)',
+                  backdropFilter: 'blur(3px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 3,
+                }}
+              >
+                <span
+                  style={{
+                    background: '#ef4444',
+                    color: '#ffffff',
+                    padding: '10px 26px',
+                    borderRadius: '14px',
+                    fontWeight: '800',
+                    fontSize: '1.2rem',
+                    letterSpacing: '0.08em',
+                    boxShadow: '0 8px 24px rgba(239, 68, 68, 0.45)',
+                    border: '2px solid rgba(255,255,255,0.9)',
+                    transform: 'rotate(-4deg)',
+                  }}
+                >
+                  SOLD OUT • HẾT HÀNG
+                </span>
+              </div>
+            )}
+            {product.badge && !isSoldOut && (
               <span
                 className={`badge-pill-status ${product.badgeType || 'discount'}`}
                 style={{
@@ -163,15 +219,33 @@ export default function ProductDetail({ product, onBack, onAddToCart, onBuyNow, 
             {product.name}
           </h1>
 
-          {/* Đánh giá */}
-          {product.rating !== undefined && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
-              <span style={{ color: '#f59e0b', fontWeight: '700' }}>⭐ {product.rating}</span>
-              {product.reviewsCount !== undefined && (
-                <span style={{ color: '#64748b', fontSize: '0.9rem' }}>( {product.reviewsCount} đánh giá )</span>
-              )}
-            </div>
-          )}
+          {/* Đánh giá & Tình trạng kho */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px', flexWrap: 'wrap' }}>
+            {product.rating !== undefined && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ color: '#f59e0b', fontWeight: '700' }}>⭐ {product.rating}</span>
+                {product.reviewsCount !== undefined && (
+                  <span style={{ color: '#64748b', fontSize: '0.9rem' }}>({product.reviewsCount} đánh giá)</span>
+                )}
+              </div>
+            )}
+            <span
+              style={{
+                fontSize: '0.82rem',
+                fontWeight: '700',
+                padding: '3px 10px',
+                borderRadius: '20px',
+                background: isSoldOut ? '#fee2e2' : stock < 5 ? '#fef3c7' : '#ecfdf5',
+                color: isSoldOut ? '#dc2626' : stock < 5 ? '#d97706' : '#10b981',
+              }}
+            >
+              {isSoldOut
+                ? '✕ Hết hàng (Tồn kho: 0)'
+                : stock < 5
+                ? `🔥 Sắp hết hàng (Chỉ còn ${stock})`
+                : `✓ Còn hàng (Tồn kho: ${stock})`}
+            </span>
+          </div>
 
           {/* Giá tiền */}
           <div
@@ -185,7 +259,7 @@ export default function ProductDetail({ product, onBack, onAddToCart, onBuyNow, 
               marginBottom: '20px',
             }}
           >
-            <span style={{ fontSize: '2rem', fontWeight: '800', color: '#ff6b35' }}>
+            <span style={{ fontSize: '2rem', fontWeight: '800', color: isSoldOut ? '#94a3b8' : '#ff6b35' }}>
               {formatCurrency(product.price)}
             </span>
             {product.originalPrice && product.originalPrice > product.price && (
@@ -482,31 +556,76 @@ export default function ProductDetail({ product, onBack, onAddToCart, onBuyNow, 
             </div>
           )}
 
+          {/* Chọn số lượng (chặn vượt quá tồn kho) */}
+          {!isSoldOut && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '14px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: '700', color: '#475569' }}>Số lượng:</span>
+              <div style={{ display: 'inline-flex', alignItems: 'center', border: '1.5px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
+                <button
+                  type="button"
+                  onClick={() => setBuyQty((q) => Math.max(1, q - 1))}
+                  style={{ padding: '6px 14px', background: '#f8fafc', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '1rem' }}
+                >
+                  -
+                </button>
+                <span style={{ padding: '6px 16px', fontWeight: '800', fontSize: '0.95rem', color: '#1e293b' }}>
+                  {Math.min(buyQty, stock)}
+                </span>
+                <button
+                  type="button"
+                  disabled={buyQty >= stock}
+                  onClick={() => setBuyQty((q) => Math.min(stock, q + 1))}
+                  style={{
+                    padding: '6px 14px',
+                    background: '#f8fafc',
+                    border: 'none',
+                    cursor: buyQty >= stock ? 'not-allowed' : 'pointer',
+                    fontWeight: '700',
+                    fontSize: '1rem',
+                    opacity: buyQty >= stock ? 0.45 : 1,
+                  }}
+                >
+                  +
+                </button>
+              </div>
+              <span style={{ fontSize: '0.8rem', color: '#64748b' }}>(Tối đa {stock})</span>
+            </div>
+          )}
+
           {/* Các nút hành động: Thêm vào giỏ & Mua ngay */}
           <div style={{ display: 'flex', gap: '14px', marginTop: '10px' }}>
             <button
               className="btn-primary-cta"
+              disabled={isSoldOut}
               onClick={handleAddToCartWithSize}
-              style={{ padding: '14px 28px', fontSize: '1rem', flex: 1 }}
+              style={{
+                padding: '14px 28px',
+                fontSize: '1rem',
+                flex: 1,
+                opacity: isSoldOut ? 0.55 : 1,
+                cursor: isSoldOut ? 'not-allowed' : 'pointer',
+                background: isSoldOut ? '#94a3b8' : undefined,
+              }}
             >
-              🛒 Thêm vào giỏ {productSizeInfo ? `(${selectedSize})` : ''}
+              {isSoldOut ? 'Hết hàng' : `🛒 Thêm vào giỏ ${productSizeInfo ? `(${selectedSize})` : ''}`}
             </button>
             <button
               type="button"
+              disabled={isSoldOut}
               onClick={handleBuyNowWithSize}
               style={{
-                background: '#ea580c',
-                color: '#ffffff',
+                background: isSoldOut ? '#cbd5e1' : '#ea580c',
+                color: isSoldOut ? '#475569' : '#ffffff',
                 border: 'none',
                 borderRadius: '14px',
                 padding: '14px 28px',
                 fontSize: '1rem',
                 fontWeight: '700',
-                cursor: 'pointer',
+                cursor: isSoldOut ? 'not-allowed' : 'pointer',
                 flex: 1,
               }}
             >
-              ⚡ Mua ngay
+              {isSoldOut ? 'Hết hàng' : '⚡ Mua ngay'}
             </button>
           </div>
         </div>

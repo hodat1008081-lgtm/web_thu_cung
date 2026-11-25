@@ -2,133 +2,14 @@
 // Quản lý hiển thị danh sách sản phẩm thú cưng & phụ kiện (Nhiệm vụ: San San)
 // Tích hợp: Hệ thống Tìm kiếm (SearchBar) & Bộ lọc (FilterSidebar) của Vân
 import { useMemo } from 'react';
-import { ACCESSORY_PRODUCTS } from './productSizeData';
-
-// Danh sách 6 sản phẩm thú cưng mẫu với hình ảnh thật nét từ Unsplash
-export const SAMPLE_PRODUCTS = [
-  {
-    id: 1,
-    name: 'Thức ăn hạt Royal Canin Maxi Puppy 2kg',
-    price: 420000,
-    originalPrice: 480000,
-    categoryName: 'Thức ăn & Dinh dưỡng',
-    badge: '-12%',
-    badgeType: 'discount',
-    rating: 5.0,
-    reviewsCount: 128,
-    image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=800&auto=format&fit=crop&q=80',
-    description: 'Thức ăn hạt dinh dưỡng cao cấp xuất xứ từ Pháp, công thức đặc chế giàu protein chất lượng cao, men vi sinh tiêu hóa và DHA giúp phát triển trí não tối ưu cho chó mèo con dưới 12 tháng tuổi.',
-    specs: {
-      'Thương hiệu': 'Royal Canin (Pháp)',
-      'Trọng lượng': '2.0 kg',
-      'Độ tuổi phù hợp': 'Dành cho thú cưng dưới 12 tháng tuổi',
-      'Hạn sử dụng': '24 tháng kể từ ngày sản xuất',
-    },
-  },
-  {
-    id: 2,
-    name: 'Pâté mèo sốt cá ngừ & gà thượng hạng 85g',
-    price: 150000,
-    originalPrice: 180000,
-    categoryName: 'Thức ăn ướt & Pâté',
-    badge: 'Bestseller',
-    badgeType: 'hot',
-    rating: 4.9,
-    reviewsCount: 95,
-    image: 'https://images.unsplash.com/photo-1535930891776-0c2dfb7fda1a?w=800&auto=format&fit=crop&q=80',
-    description: 'Pâté tươi ngon được nấu từ phi lê cá ngừ đại dương và ức gà tươi hảo hạng, bổ sung khoáng chất Taurine giúp sáng mắt, mượt lông và hỗ trợ thận cho mèo mọi lứa tuổi.',
-    specs: {
-      'Thương hiệu': 'Whiskas Gourmet',
-      'Quy cách': 'Combo hộp 6 gói (85g/gói)',
-      'Thành phần': 'Cá ngừ 45%, ức gà 30%, thạch bổ sung Taurine',
-      'Hạn sử dụng': '18 tháng',
-    },
-  },
-  {
-    id: 3,
-    name: 'Đồ chơi xương gặm cao su mài răng sạch mảng bám',
-    price: 80000,
-    originalPrice: 110000,
-    categoryName: 'Đồ chơi thú cưng',
-    badge: 'Yêu thích',
-    badgeType: 'purebred',
-    rating: 4.8,
-    reviewsCount: 64,
-    image: 'https://images.unsplash.com/photo-1576201836106-db1758fd1c97?w=800&auto=format&fit=crop&q=80',
-    description: 'Đồ chơi gặm hình xương làm từ cao su tự nhiên cao cấp an toàn tuyệt đối, độ đàn hồi cực dai có gai massage nướu, giúp cún làm sạch cao răng và không cắn phá đồ đạc trong nhà.',
-    specs: {
-      'Chất liệu': 'Cao su nhiệt dẻo TPR không độc hại, không mùi',
-      'Kích thước': 'Dài 15cm x rộng 4.5cm',
-      'Tính năng': 'Chịu lực cắn mạnh, nổi trên mặt nước, có rãnh massage',
-      'Xuất xứ': 'Nhập khẩu cao cấp',
-    },
-  },
-  {
-    id: 4,
-    name: 'Vòng cổ chuông đồng thời trang phong cách Retro',
-    price: 120000,
-    originalPrice: 150000,
-    categoryName: 'Phụ kiện thời trang',
-    badge: 'Hot trend',
-    badgeType: 'new',
-    rating: 4.9,
-    reviewsCount: 78,
-    image: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=800&auto=format&fit=crop&q=80',
-    description: 'Vòng cổ vải dệt thủ công hoa văn vintage sang trọng, kèm chuông đồng leng keng giúp bạn dễ định vị bé cưng. Chốt kim loại bền bỉ có thể nới rộng vừa vặn cho cả chó và mèo.',
-    specs: {
-      'Chất liệu': 'Vải dệt Canvas cao cấp & khóa hợp kim chống gỉ',
-      'Kích cỡ': 'Chu vi cổ từ 19cm - 32cm (tự do điều chỉnh)',
-      'Đối tượng': 'Phù hợp cho mèo và các giống chó nhỏ/vừa',
-      'Phụ kiện kèm': 'Chuông đồng phong thủy mini siêu xinh',
-    },
-  },
-  {
-    id: 5,
-    name: 'Nệm êm nhung tuyết bồng bềnh chống trượt cao cấp',
-    price: 250000,
-    originalPrice: 320000,
-    categoryName: 'Ổ nệm & Đồ ngủ',
-    badge: '-22%',
-    badgeType: 'discount',
-    rating: 5.0,
-    reviewsCount: 110,
-    image: 'https://images.unsplash.com/photo-1541599540903-216a46ca1dc0?w=800&auto=format&fit=crop&q=80',
-    description: 'Nệm tròn lông nhung tuyết êm ái tựa đám mây với lõi bông PP đàn hồi cao cấp, đáy phủ hạt cao su chống trượt trên nền gạch men, mang lại giấc ngủ sâu và ấm áp bảo vệ xương khớp cho thú cưng.',
-    specs: {
-      'Chất liệu vỏ': 'Nhung tuyết siêu mềm mịn không rụng lông',
-      'Lõi đệm': 'Bông gòn tinh khiết PP 3D đàn hồi cao',
-      'Kích thước': 'Đường kính 50cm (phù hợp pet dưới 8kg)',
-      'Vệ sinh': 'Có thể giặt máy hoặc giặt tay tiện lợi',
-    },
-  },
-  {
-    id: 6,
-    name: 'Cần câu mèo đàn hồi gắn lông vũ tự nhiên & chuông',
-    price: 60000,
-    originalPrice: 90000,
-    categoryName: 'Đồ chơi mèo',
-    badge: 'Bán chạy',
-    badgeType: 'hot',
-    rating: 4.8,
-    reviewsCount: 52,
-    image: 'https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=800&auto=format&fit=crop&q=80',
-    description: 'Cần câu mèo dây thép dẻo trợ lực đàn hồi cực nhạy, đầu cần gắn chùm lông vũ tự nhiên bắt mắt và chuông kích hoạt bản năng săn mồi, giúp các bé mèo giải tỏa căng thẳng và vận động linh hoạt.',
-    specs: {
-      'Chiều dài': 'Cần 90cm, dây nối dài 60cm',
-      'Chất liệu': 'Sợi carbon dẻo uốn cong 360 độ & lông gà tự nhiên',
-      'Trọng lượng': 'Chỉ 45g, thao tác vung nhẹ nhàng',
-      'Công dụng': 'Tăng tương tác giữa sen và hoàng thượng',
-    },
-  },
-];
 
 // Hàm định dạng giá tiền VNĐ (vd: 150.000 VNĐ)
-export const formatPriceVND = (amount) => {
+const formatPriceVND = (amount) => {
   return (amount || 0).toLocaleString('vi-VN') + ' VNĐ';
 };
 
 export default function ProductList({
-  products,
+  products = [],
   activeCategory = 'all',
   setActiveCategory,
   searchTerm = '',
@@ -144,26 +25,10 @@ export default function ProductList({
   onSelectProduct,
   onViewDetail,
 }) {
-  // Kết hợp danh sách sản phẩm với các sản phẩm phụ kiện thú cưng có dữ liệu size chuẩn hóa
+  // Sử dụng trực tiếp danh sách sản phẩm từ StoreContext (Single Source of Truth)
   const displayProducts = useMemo(() => {
-    const baseList = Array.isArray(products) && products.length > 0 ? products : (products ? [] : SAMPLE_PRODUCTS);
-    const existingNames = new Set(baseList.map((p) => (p.name ? p.name.toLowerCase() : String(p.id))));
-    const additional = ACCESSORY_PRODUCTS.filter((p) => !existingNames.has(p.name.toLowerCase()));
-
-    const filteredAdditional = additional.filter((prod) => {
-      const matchCat = activeCategory === 'all' || prod.category === activeCategory;
-      const cleanSearch = (searchTerm || '').toLowerCase().trim();
-      let matchSearch = true;
-      if (cleanSearch) {
-        matchSearch =
-          prod.name.toLowerCase().includes(cleanSearch) ||
-          (prod.categoryName && prod.categoryName.toLowerCase().includes(cleanSearch));
-      }
-      return matchCat && matchSearch;
-    });
-
-    return [...baseList, ...filteredAdditional];
-  }, [products, activeCategory, searchTerm]);
+    return Array.isArray(products) ? products : [];
+  }, [products]);
 
   // Xử lý khi nhấn nút Xem chi tiết: hỗ trợ cả onViewDetail và onSelectProduct
   const handleDetailClick = (product) => {
@@ -363,6 +228,8 @@ export default function ProductList({
           >
             {displayProducts.map((product) => {
               const isFavorite = wishlist && wishlist.includes(product.id);
+              const stock = typeof product.stock === 'number' ? product.stock : 0;
+              const isSoldOut = stock <= 0;
 
               return (
                 <div
@@ -371,12 +238,13 @@ export default function ProductList({
                   style={{
                     background: '#ffffff',
                     borderRadius: '20px',
-                    border: '1px solid #f1f5f9',
+                    border: isSoldOut ? '1px solid #e2e8f0' : '1px solid #f1f5f9',
                     boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
                     overflow: 'hidden',
                     display: 'flex',
                     flexDirection: 'column',
                     transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                    opacity: isSoldOut ? 0.92 : 1,
                   }}
                 >
                   {/* Khung ảnh: Chiều cao 200px, object-fit cover */}
@@ -402,11 +270,45 @@ export default function ProductList({
                         objectFit: 'cover',
                         display: 'block',
                         transition: 'transform 0.3s ease',
+                        filter: isSoldOut ? 'grayscale(45%)' : 'none',
                       }}
                     />
 
+                    {/* Lớp phủ Overlay mờ + nhãn SOLD OUT / HẾT HÀNG khi stock <= 0 */}
+                    {isSoldOut && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          background: 'rgba(15, 23, 42, 0.55)',
+                          backdropFilter: 'blur(2px)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          zIndex: 3,
+                        }}
+                      >
+                        <span
+                          style={{
+                            background: '#ef4444',
+                            color: '#ffffff',
+                            padding: '6px 16px',
+                            borderRadius: '10px',
+                            fontWeight: '800',
+                            fontSize: '0.88rem',
+                            letterSpacing: '0.06em',
+                            boxShadow: '0 4px 16px rgba(239, 68, 68, 0.45)',
+                            border: '2px solid rgba(255,255,255,0.88)',
+                            transform: 'rotate(-4deg)',
+                          }}
+                        >
+                          SOLD OUT • HẾT HÀNG
+                        </span>
+                      </div>
+                    )}
+
                     {/* Badge trạng thái */}
-                    {product.badge && (
+                    {product.badge && !isSoldOut && (
                       <div
                         style={{
                           position: 'absolute',
@@ -431,6 +333,7 @@ export default function ProductList({
                       <button
                         className={`wishlist-btn ${isFavorite ? 'active' : ''}`}
                         title={isFavorite ? 'Bỏ thích' : 'Yêu thích'}
+                        style={{ zIndex: 4 }}
                         onClick={(e) => {
                           e.stopPropagation();
                           onToggleWishlist(product.id);
@@ -502,7 +405,7 @@ export default function ProductList({
                         fontSize: '1.05rem',
                         fontWeight: '700',
                         color: '#1e293b',
-                        marginBottom: '12px',
+                        marginBottom: '8px',
                         cursor: 'pointer',
                         lineHeight: '1.4',
                         minHeight: '2.8em',
@@ -515,6 +418,50 @@ export default function ProductList({
                     >
                       {product.name}
                     </h3>
+
+                    {/* Tình trạng tồn kho */}
+                    <div style={{ marginBottom: '10px' }}>
+                      {isSoldOut ? (
+                        <span
+                          style={{
+                            fontSize: '0.74rem',
+                            fontWeight: '700',
+                            color: '#dc2626',
+                            background: '#fee2e2',
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                          }}
+                        >
+                          ✕ Hết hàng (Sold Out)
+                        </span>
+                      ) : stock < 5 ? (
+                        <span
+                          style={{
+                            fontSize: '0.74rem',
+                            fontWeight: '700',
+                            color: '#d97706',
+                            background: '#fef3c7',
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                          }}
+                        >
+                          🔥 Sắp hết: còn {stock}
+                        </span>
+                      ) : (
+                        <span
+                          style={{
+                            fontSize: '0.74rem',
+                            fontWeight: '600',
+                            color: '#10b981',
+                            background: '#ecfdf5',
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                          }}
+                        >
+                          ✓ Còn {stock} sản phẩm
+                        </span>
+                      )}
+                    </div>
 
                     {/* Giá tiền */}
                     <div
@@ -530,7 +477,7 @@ export default function ProductList({
                         style={{
                           fontSize: '1.25rem',
                           fontWeight: '800',
-                          color: '#ff6b35',
+                          color: isSoldOut ? '#94a3b8' : '#ff6b35',
                         }}
                       >
                         {formatPriceVND(product.price)}
@@ -548,7 +495,7 @@ export default function ProductList({
                       )}
                     </div>
 
-                    {/* 2 nút thao tác: "Xem chi tiết" và "Thêm vào giỏ" */}
+                    {/* 2 nút thao tác: "Xem chi tiết" và "Thêm vào giỏ" / "Hết hàng" */}
                     <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
                       <button
                         className="btn-primary-cta"
@@ -566,16 +513,22 @@ export default function ProductList({
 
                       <button
                         className="btn-secondary-cta"
-                        onClick={() => onAddToCart && onAddToCart(product)}
+                        disabled={isSoldOut}
+                        onClick={() => !isSoldOut && onAddToCart && onAddToCart(product)}
                         style={{
                           flex: 1,
                           padding: '10px 8px',
                           fontSize: '0.88rem',
                           borderRadius: '12px',
                           whiteSpace: 'nowrap',
+                          opacity: isSoldOut ? 0.55 : 1,
+                          cursor: isSoldOut ? 'not-allowed' : 'pointer',
+                          background: isSoldOut ? '#f1f5f9' : undefined,
+                          color: isSoldOut ? '#64748b' : undefined,
+                          borderColor: isSoldOut ? '#cbd5e1' : undefined,
                         }}
                       >
-                        Thêm vào giỏ
+                        {isSoldOut ? 'Hết hàng' : 'Thêm vào giỏ'}
                       </button>
                     </div>
                   </div>
