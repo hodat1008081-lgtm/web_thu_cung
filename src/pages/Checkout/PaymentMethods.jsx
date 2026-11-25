@@ -3,6 +3,31 @@
 import { useState } from 'react';
 import { formatCurrency } from '../../data/products';
 
+// ========================================================
+// CẤU HÌNH THANH TOÁN ĐIỆN TỬ
+// Dán đường dẫn hình ảnh mã QR trong máy của bạn vào `qrImage` bên dưới.
+// Gợi ý: Chép ảnh QR vào thư mục `public/image/` rồi điền `/image/ten-anh-qr.png`
+// (hoặc import ảnh từ `src/assets/` rồi gán biến vào `qrImage`).
+// ========================================================
+const ELECTRONIC_PAYMENT_CONFIG = {
+  qr: {
+    accountName: 'LE MINH HIEN', // Tên chủ tài khoản ngân hàng
+    qrImage: '/image/qr-ngan-hang.png', // <-- Dán địa chỉ hình ảnh mã QR ngân hàng tại đây
+    panelBg: '#f8fafc',
+    panelBorder: '#e2e8f0',
+    imageBorder: '1px solid #cbd5e1',
+    accentColor: '#1e293b',
+  },
+  momo: {
+    accountName: 'LE MINH HIEN', // Tên chủ tài khoản Ví MoMo
+    qrImage: '/image/qr-momo.png', // <-- Dán địa chỉ hình ảnh mã QR MoMo tại đây
+    panelBg: '#fff5f7',
+    panelBorder: '#fbcfe8',
+    imageBorder: '2px solid #d82d8b',
+    accentColor: '#a50064',
+  },
+};
+
 export default function PaymentMethods({
   cartItems = [],
   customerInfo = {},
@@ -11,20 +36,12 @@ export default function PaymentMethods({
 }) {
   const [selectedMethod, setSelectedMethod] = useState('cod');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [copiedField, setCopiedField] = useState(null);
+  const [qrLoadErrors, setQrLoadErrors] = useState({});
 
   // Quản lý voucher / mã giảm giá
   const [voucherInput, setVoucherInput] = useState('');
   const [appliedVoucher, setAppliedVoucher] = useState(null);
   const [voucherMessage, setVoucherMessage] = useState(null);
-
-  // Form thẻ tín dụng giả lập
-  const [cardInfo, setCardInfo] = useState({
-    number: '',
-    name: '',
-    expiry: '',
-    cvv: '',
-  });
 
   // Danh sách voucher có sẵn trong hệ thống
   const AVAILABLE_VOUCHERS = [
@@ -72,11 +89,6 @@ export default function PaymentMethods({
 
   const finalTotal = Math.max(0, totalPrice + finalShippingFee - (appliedVoucher?.type === 'shipping' ? 0 : discountAmount));
 
-  // Thông tin chuyển khoản VietQR & MoMo
-  const transferContent = `PETCARE ${customerInfo.phone ? customerInfo.phone.replace(/\s+/g, '') : 'JOY88'}`;
-  const vietQrUrl = `https://img.vietqr.io/image/MB-0988666888-compact2.png?amount=${finalTotal}&addInfo=${encodeURIComponent(transferContent)}&accountName=PETCARE%20JOY%20VIETNAM`;
-  const momoQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=2|99|0988666888|PETCARE%20JOY||0|0|${finalTotal}|${encodeURIComponent(transferContent)}|transfer_myqr`;
-
   const paymentOptions = [
     {
       id: 'cod',
@@ -87,20 +99,14 @@ export default function PaymentMethods({
     {
       id: 'qr',
       icon: '🏦',
-      title: 'Chuyển khoản QR Ngân hàng (VietQR)',
-      description: 'Quét mã VietQR qua app ngân hàng, hệ thống tự động xác nhận sau 10 giây.',
+      title: 'Chuyển khoản QR Ngân hàng',
+      description: 'Quét mã QR ngân hàng để thanh toán nhanh chóng.',
     },
     {
       id: 'momo',
       icon: '👛',
       title: 'Ví Điện Tử MoMo',
-      description: 'Thanh toán siêu tốc & an toàn với ví điện tử MoMo trên điện thoại.',
-    },
-    {
-      id: 'card',
-      icon: '💳',
-      title: 'Thẻ Quốc Tế Visa / MasterCard / JCB',
-      description: 'Hỗ trợ thẻ tín dụng & ghi nợ quốc tế bảo mật chuẩn PCI-DSS & 3D Secure.',
+      description: 'Quét mã QR ví điện tử MoMo để thanh toán.',
     },
   ];
 
@@ -128,51 +134,11 @@ export default function PaymentMethods({
     setVoucherMessage(null);
   };
 
-  // Sao chép nhanh văn bản
-  const handleCopyText = (text, fieldKey) => {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(text);
-    }
-    setCopiedField(fieldKey);
-    setTimeout(() => setCopiedField(null), 2000);
-  };
-
-  // Format số thẻ quốc tế
-  const handleCardNumberChange = (e) => {
-    const raw = e.target.value.replace(/\D/g, '').slice(0, 16);
-    const formatted = raw.replace(/(\d{4})(?=\d)/g, '$1 ');
-    setCardInfo((prev) => ({ ...prev, number: formatted }));
-  };
-
-  // Format ngày hết hạn thẻ MM/YY
-  const handleCardExpiryChange = (e) => {
-    let raw = e.target.value.replace(/\D/g, '').slice(0, 4);
-    if (raw.length >= 3) {
-      raw = raw.slice(0, 2) + '/' + raw.slice(2);
-    }
-    setCardInfo((prev) => ({ ...prev, expiry: raw }));
-  };
-
   // Xác nhận đặt hàng với loading 1.5s
   const handlePlaceOrder = () => {
     if (cartItems.length === 0) {
       alert('Giỏ hàng trống! Vui lòng chọn sản phẩm trước khi thanh toán.');
       return;
-    }
-
-    if (selectedMethod === 'card') {
-      if (!cardInfo.number || cardInfo.number.replace(/\s/g, '').length < 16) {
-        alert('Vui lòng nhập đủ 16 số trên thẻ quốc tế!');
-        return;
-      }
-      if (!cardInfo.expiry || cardInfo.expiry.length < 5) {
-        alert('Vui lòng nhập ngày hết hạn thẻ (MM/YY)!');
-        return;
-      }
-      if (!cardInfo.cvv || cardInfo.cvv.length < 3) {
-        alert('Vui lòng nhập mã bảo mật CVV (3 chữ số)!');
-        return;
-      }
     }
 
     setIsProcessing(true);
@@ -200,7 +166,10 @@ export default function PaymentMethods({
         voucherCode: appliedVoucher ? appliedVoucher.code : null,
         paymentMethod: selectedOption?.title || 'COD Tiền mặt',
         paymentMethodId: selectedMethod,
+<<<<<<< Updated upstream
         cardDetails: selectedMethod === 'card' ? { ...cardInfo, cvv: '***' } : null,
+=======
+>>>>>>> Stashed changes
         status: 'pending',
       };
 
@@ -258,27 +227,6 @@ export default function PaymentMethods({
           to { opacity: 1; transform: translateY(0); }
         }
 
-        .pm-copy-btn {
-          background: #e2e8f0;
-          color: #334155;
-          border: none;
-          padding: 3px 10px;
-          border-radius: 6px;
-          font-size: 0.76rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: background 0.2s;
-        }
-
-        .pm-copy-btn:hover {
-          background: #cbd5e1;
-        }
-
-        .pm-copy-btn.copied {
-          background: #10b981;
-          color: #ffffff;
-        }
-
         .pm-voucher-tag {
           display: inline-flex;
           align-items: center;
@@ -298,21 +246,6 @@ export default function PaymentMethods({
           background: #ff6b35;
           color: #ffffff;
           border-color: #ff6b35;
-        }
-
-        .pm-card-input {
-          width: 100%;
-          padding: 10px 14px;
-          border: 1.5px solid #cbd5e1;
-          border-radius: 10px;
-          font-size: 0.92rem;
-          outline: none;
-          transition: border-color 0.2s;
-        }
-
-        .pm-card-input:focus {
-          border-color: #ff6b35;
-          box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.12);
         }
 
         .pm-spinner {
@@ -350,10 +283,6 @@ export default function PaymentMethods({
 
           .pm-qr-img {
             margin: 0 auto;
-          }
-
-          .pm-card-grid {
-            grid-template-columns: 1fr !important;
           }
         }
       `}</style>
@@ -413,240 +342,86 @@ export default function PaymentMethods({
                 )}
 
                 {/* ========================================================
-                    CHI TIẾT: VIETQR (NGÂN HÀNG)
+                    CHI TIẾT: THANH TOÁN ĐIỆN TỬ (NGÂN HÀNG QR / VÍ MOMO)
+                    Chỉ hiển thị Tên chủ tài khoản & Hình ảnh mã QR từ máy
                    ======================================================== */}
-                {isSelected && opt.id === 'qr' && (
-                  <div
-                    className="pm-detail-panel"
-                    style={{
-                      background: '#f8fafc',
-                      border: '1px solid #e2e8f0',
-                    }}
-                  >
-                    <div className="pm-qr-flex" style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                      <div className="pm-qr-img" style={{ flexShrink: 0, textAlign: 'center' }}>
-                        <img
-                          src={vietQrUrl}
-                          alt="VietQR PetCare Joy"
-                          style={{
-                            width: '180px',
-                            height: '180px',
-                            borderRadius: '12px',
-                            border: '1px solid #cbd5e1',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                            background: '#ffffff',
-                            objectFit: 'contain',
-                          }}
-                        />
-                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '6px' }}>
-                          Mã QR tự động cập nhật số tiền
+                {isSelected && ELECTRONIC_PAYMENT_CONFIG[opt.id] && (() => {
+                  const electronicConfig = ELECTRONIC_PAYMENT_CONFIG[opt.id];
+                  const hasQrImage = Boolean(electronicConfig.qrImage) && !qrLoadErrors[opt.id];
+
+                  return (
+                    <div
+                      className="pm-detail-panel"
+                      style={{
+                        background: electronicConfig.panelBg,
+                        border: electronicConfig.panelBorder,
+                      }}
+                    >
+                      <div className="pm-qr-flex" style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                        <div className="pm-qr-img" style={{ flexShrink: 0, textAlign: 'center' }}>
+                          {hasQrImage ? (
+                            <img
+                              src={electronicConfig.qrImage}
+                              alt={`Mã QR ${opt.title}`}
+                              onError={() => setQrLoadErrors((prev) => ({ ...prev, [opt.id]: true }))}
+                              style={{
+                                width: '180px',
+                                height: '180px',
+                                borderRadius: '12px',
+                                border: electronicConfig.imageBorder,
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                                background: '#ffffff',
+                                objectFit: 'contain',
+                                padding: '4px',
+                              }}
+                            />
+                          ) : (
+                            <div
+                              style={{
+                                width: '180px',
+                                height: '180px',
+                                borderRadius: '12px',
+                                border: '2px dashed #94a3b8',
+                                background: '#ffffff',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: '12px',
+                                fontSize: '0.78rem',
+                                color: '#64748b',
+                                lineHeight: '1.4',
+                              }}
+                            >
+                              <span style={{ fontSize: '1.5rem', marginBottom: '6px' }}>🖼️</span>
+                              <span>Chưa có ảnh QR</span>
+                              <span style={{ fontSize: '0.72rem', marginTop: '4px', wordBreak: 'break-word' }}>
+                                Dán đường dẫn ảnh vào <code>qrImage</code> ({electronicConfig.qrImage || 'trống'})
+                              </span>
+                            </div>
+                          )}
                         </div>
-                      </div>
 
-                      <div style={{ flex: 1, fontSize: '0.87rem' }}>
-                        <div style={{ fontWeight: '700', color: '#0284c7', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px #10b981' }}></span>
-                          Quét mã VietQR trên bất kỳ ứng dụng ngân hàng nào
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '8px 12px', alignItems: 'center' }}>
-                          <span style={{ color: '#64748b' }}>Ngân hàng:</span>
-                          <strong>MB Bank (Quân Đội)</strong>
-                          <span></span>
-
-                          <span style={{ color: '#64748b' }}>Số tài khoản:</span>
-                          <strong style={{ color: '#ff6b35', fontSize: '1rem', letterSpacing: '0.5px' }}>0988 666 888</strong>
-                          <button
-                            type="button"
-                            className={`pm-copy-btn ${copiedField === 'stk' ? 'copied' : ''}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCopyText('0988666888', 'stk');
-                            }}
-                          >
-                            {copiedField === 'stk' ? '✓ Đã chép' : 'Sao chép'}
-                          </button>
-
-                          <span style={{ color: '#64748b' }}>Chủ TK:</span>
-                          <strong style={{ textTransform: 'uppercase' }}>PETCARE JOY VIETNAM</strong>
-                          <span></span>
-
-                          <span style={{ color: '#64748b' }}>Số tiền:</span>
-                          <strong style={{ color: '#059669', fontSize: '1.05rem' }}>{formatCurrency(finalTotal)}</strong>
-                          <button
-                            type="button"
-                            className={`pm-copy-btn ${copiedField === 'amount' ? 'copied' : ''}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCopyText(finalTotal.toString(), 'amount');
-                            }}
-                          >
-                            {copiedField === 'amount' ? '✓ Đã chép' : 'Sao chép'}
-                          </button>
-
-                          <span style={{ color: '#64748b' }}>Nội dung CK:</span>
-                          <strong style={{ background: '#fef3c7', padding: '2px 6px', borderRadius: '4px', color: '#92400e' }}>
-                            {transferContent}
-                          </strong>
-                          <button
-                            type="button"
-                            className={`pm-copy-btn ${copiedField === 'content' ? 'copied' : ''}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCopyText(transferContent, 'content');
-                            }}
-                          >
-                            {copiedField === 'content' ? '✓ Đã chép' : 'Sao chép'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* ========================================================
-                    CHI TIẾT: VÍ MOMO
-                   ======================================================== */}
-                {isSelected && opt.id === 'momo' && (
-                  <div
-                    className="pm-detail-panel"
-                    style={{
-                      background: '#fff5f7',
-                      border: '1px solid #fbcfe8',
-                    }}
-                  >
-                    <div className="pm-qr-flex" style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                      <div className="pm-qr-img" style={{ flexShrink: 0, textAlign: 'center' }}>
-                        <img
-                          src={momoQrUrl}
-                          alt="MoMo QR Code"
-                          style={{
-                            width: '160px',
-                            height: '160px',
-                            borderRadius: '12px',
-                            border: '2px solid #d82d8b',
-                            padding: '4px',
-                            background: '#ffffff',
-                          }}
-                        />
-                        <div style={{ fontSize: '0.75rem', color: '#d82d8b', fontWeight: '700', marginTop: '6px' }}>
-                          Quét bằng Ví MoMo
-                        </div>
-                      </div>
-
-                      <div style={{ flex: 1, fontSize: '0.87rem' }}>
-                        <div style={{ fontWeight: '800', color: '#a50064', fontSize: '1rem', marginBottom: '8px' }}>
-                          Thanh toán Ví MoMo liền mạch
-                        </div>
-                        <p style={{ color: '#475569', marginBottom: '10px', fontSize: '0.84rem' }}>
-                          Mở ứng dụng <strong>MoMo</strong>, chọn <strong>"Quét mã"</strong> để quét mã QR bên cạnh hoặc chuyển tiền đến số ví MoMo bên dưới:
-                        </p>
-                        <div style={{ background: '#ffffff', padding: '10px 14px', borderRadius: '10px', border: '1px solid #f9a8d4', display: 'inline-flex', alignItems: 'center', gap: '12px' }}>
-                          <div>
-                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Ví MoMo PetCare Joy:</div>
-                            <div style={{ fontWeight: '800', color: '#a50064', fontSize: '1.05rem' }}>0988 666 888</div>
+                        <div style={{ flex: 1, fontSize: '0.92rem' }}>
+                          <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '4px' }}>
+                            Tên chủ tài khoản:
                           </div>
-                          <button
-                            type="button"
-                            className={`pm-copy-btn ${copiedField === 'momo' ? 'copied' : ''}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCopyText('0988666888', 'momo');
+                          <div
+                            style={{
+                              fontWeight: '800',
+                              fontSize: '1.08rem',
+                              textTransform: 'uppercase',
+                              color: electronicConfig.accentColor,
+                              letterSpacing: '0.4px',
                             }}
                           >
-                            {copiedField === 'momo' ? '✓ Đã chép' : 'Sao chép SĐT'}
-                          </button>
+                            {electronicConfig.accountName}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
-
-                {/* ========================================================
-                    CHI TIẾT: THẺ QUỐC TẾ (VISA / MASTER / JCB)
-                   ======================================================== */}
-                {isSelected && opt.id === 'card' && (
-                  <div
-                    className="pm-detail-panel"
-                    style={{
-                      background: '#f8fafc',
-                      border: '1px solid #cbd5e1',
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                      <span style={{ fontWeight: '700', color: '#1e293b', fontSize: '0.92rem' }}>
-                        Thông tin thẻ thanh toán quốc tế:
-                      </span>
-                      <div style={{ display: 'flex', gap: '6px', fontSize: '1.2rem' }}>
-                        <span title="Visa">💳</span>
-                        <span title="Mastercard">🔴🟡</span>
-                        <span title="JCB">🟢🔵</span>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', color: '#475569', marginBottom: '4px' }}>
-                          SỐ THẺ (16 CHỮ SỐ) *
-                        </label>
-                        <input
-                          type="text"
-                          className="pm-card-input"
-                          placeholder="4532 8888 6666 9999"
-                          value={cardInfo.number}
-                          onChange={handleCardNumberChange}
-                        />
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', color: '#475569', marginBottom: '4px' }}>
-                          TÊN CHỦ THẺ (IN HOA KHÔNG DẤU) *
-                        </label>
-                        <input
-                          type="text"
-                          className="pm-card-input"
-                          placeholder="TRAN MINH HIEN"
-                          value={cardInfo.name}
-                          onChange={(e) => setCardInfo((prev) => ({ ...prev, name: e.target.value.toUpperCase() }))}
-                        />
-                      </div>
-
-                      <div className="pm-card-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', color: '#475569', marginBottom: '4px' }}>
-                            HẾT HẠN (MM/YY) *
-                          </label>
-                          <input
-                            type="text"
-                            className="pm-card-input"
-                            placeholder="12/28"
-                            value={cardInfo.expiry}
-                            onChange={handleCardExpiryChange}
-                          />
-                        </div>
-
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', color: '#475569', marginBottom: '4px' }}>
-                            MÃ BẢO MẬT (CVV/CVC) *
-                          </label>
-                          <input
-                            type="password"
-                            maxLength="4"
-                            className="pm-card-input"
-                            placeholder="•••"
-                            value={cardInfo.cvv}
-                            onChange={(e) => setCardInfo((prev) => ({ ...prev, cvv: e.target.value.replace(/\D/g, '') }))}
-                          />
-                        </div>
-                      </div>
-
-                      <div style={{ fontSize: '0.78rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                        <span>🔒</span> Bảo mật PCI-DSS 256-bit & Xác thực OTP 3D Secure an toàn tuyệt đối.
-                      </div>
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             </div>
           );

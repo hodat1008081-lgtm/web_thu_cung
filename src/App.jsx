@@ -165,12 +165,13 @@ export default function App() {
   // Thông tin checkout (Hiển)
   const [checkoutStep, setCheckoutStep] = useState(1); // 1: Form, 2: Payment
   const [customerInfo, setCustomerInfo] = useState({
-    fullName: 'Trần Minh Hiển',
-    phone: '0988 666 888',
-    address: '456 Nguyễn Thị Minh Khai, Phường 5, Quận 3',
-    city: 'HCM',
-    deliveryTime: 'morning',
-    note: 'Chuẩn bị chuồng đệm ấm cho bé',
+    fullName: '',
+    phone: '',
+    address: '',
+    city: '',
+    deliveryTime: '',
+    note: '',
+    extraServices: [],
   });
   const [currentOrderTrackingId, setCurrentOrderTrackingId] = useState('PET-2026-8899');
 
@@ -744,6 +745,7 @@ export default function App() {
           <div style={{ maxWidth: '780px', margin: '0 auto' }}>
             {checkoutStep === 1 ? (
               <CheckoutForm
+                cartItems={cartItems}
                 formData={customerInfo}
                 setFormData={setCustomerInfo}
                 onNextStep={() => setCheckoutStep(2)}

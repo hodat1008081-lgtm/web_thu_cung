@@ -94,13 +94,18 @@ export default function CheckoutForm({
   };
 
   const handleToggleExtraService = (serviceKey) => {
+<<<<<<< Updated upstream
     const current = formData.extraServices || ["vet", "cushion", "guarantee"];
+=======
+    const current = formData.extraServices || [];
+>>>>>>> Stashed changes
     const updated = current.includes(serviceKey)
       ? current.filter((k) => k !== serviceKey)
       : [...current, serviceKey];
     setFormData((prev) => ({ ...prev, extraServices: updated }));
   };
 
+<<<<<<< Updated upstream
   // Nút điền nhanh dữ liệu mẫu phục vụ kiểm thử
   const handleFillDemo = () => {
     setFormData({
@@ -116,6 +121,8 @@ export default function CheckoutForm({
     setErrors({});
   };
 
+=======
+>>>>>>> Stashed changes
   // Kiểm tra tính hợp lệ của dữ liệu trước khi chuyển bước
   const validateForm = () => {
     const newErrors = {};
@@ -140,7 +147,13 @@ export default function CheckoutForm({
     }
 
     // QUY TẮC NGHIỆP VỤ: Mặt hàng thú cưng chỉ giao tận nhà tại TP.HCM (Mô hình 100% Online)
+<<<<<<< Updated upstream
     if (hasPet && formData.city !== "HCM") {
+=======
+    if (!formData.city) {
+      newErrors.city = 'Vui lòng chọn Tỉnh / Thành phố nhận hàng!';
+    } else if (hasPet && formData.city !== 'HCM') {
+>>>>>>> Stashed changes
       newErrors.city =
         "Mô hình Online: Thú cưng sống chỉ hỗ trợ giao hàng tận nhà tại TP. Hồ Chí Minh bằng xe máy lạnh chuyên dụng. Quý khách ở tỉnh thành khác vui lòng chọn TP. Hồ Chí Minh hoặc chỉ đặt các sản phẩm thức ăn / phụ kiện.";
     }
@@ -175,25 +188,6 @@ export default function CheckoutForm({
           align-items: flex-start;
           margin-bottom: 20px;
           gap: 16px;
-        }
-
-        .cf-demo-btn {
-          background: #f1f5f9;
-          color: #475569;
-          border: 1px solid #cbd5e1;
-          padding: 6px 12px;
-          border-radius: 10px;
-          font-size: 0.8rem;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all 0.2s;
-          white-space: nowrap;
-        }
-
-        .cf-demo-btn:hover {
-          background: #ff6b35;
-          color: #ffffff;
-          border-color: #ff6b35;
         }
 
         .cf-policy-badge {
@@ -271,7 +265,7 @@ export default function CheckoutForm({
         }
       `}</style>
 
-      {/* Header & Quick Fill */}
+      {/* Header */}
       <div className="cf-header-row">
         <div>
           <div className="cf-model-tag">
@@ -292,14 +286,6 @@ export default function CheckoutForm({
             nhà nhanh chóng & an toàn.
           </p>
         </div>
-        <button
-          type="button"
-          className="cf-demo-btn"
-          onClick={handleFillDemo}
-          title="Tự động điền dữ liệu mẫu hợp lệ"
-        >
-          ⚡ Điền nhanh thông tin mẫu
-        </button>
       </div>
 
       {/* ========================================================
@@ -435,13 +421,18 @@ export default function CheckoutForm({
             <select
               name="city"
               className="form-input"
+<<<<<<< Updated upstream
               value={formData.city || "HCM"}
+=======
+              value={formData.city || ''}
+>>>>>>> Stashed changes
               onChange={handleChange}
               style={{
                 borderColor: errors.city ? "#ef4444" : undefined,
                 fontWeight: "600",
               }}
             >
+              <option value="">-- Chọn Tỉnh / Thành phố --</option>
               {PROVINCE_OPTIONS.map((prov) => {
                 const isRestrictedForPet = hasPet && prov.id !== "HCM";
                 return (
@@ -458,7 +449,11 @@ export default function CheckoutForm({
             </select>
             {errors.city ? (
               <div className="cf-field-error">✕ {errors.city}</div>
+<<<<<<< Updated upstream
             ) : hasPet && formData.city !== "HCM" ? (
+=======
+            ) : hasPet && formData.city && formData.city !== 'HCM' ? (
+>>>>>>> Stashed changes
               <div className="cf-field-error">
                 ⚠️ Thú cưng sống chỉ hỗ trợ giao tại TP. Hồ Chí Minh. Vui lòng
                 chọn TP. Hồ Chí Minh.
@@ -473,9 +468,14 @@ export default function CheckoutForm({
             <select
               name="deliveryTime"
               className="form-input"
+<<<<<<< Updated upstream
               value={formData.deliveryTime || "morning"}
+=======
+              value={formData.deliveryTime || ''}
+>>>>>>> Stashed changes
               onChange={handleChange}
             >
+              <option value="">-- Chọn thời gian nhận hàng --</option>
               <option value="morning">Buổi sáng (08:30 - 11:30)</option>
               <option value="afternoon">Buổi chiều (14:00 - 17:30)</option>
               <option value="evening">Buổi tối (18:30 - 21:00)</option>
@@ -543,9 +543,15 @@ export default function CheckoutForm({
                   label: "Hợp đồng bảo hành thuần chủng & Sổ tiêm vắc xin",
                 },
               ].map((service) => {
+<<<<<<< Updated upstream
                 const isChecked = (
                   formData.extraServices || ["vet", "cushion", "guarantee"]
                 ).includes(service.id);
+=======
+                const isChecked = (formData.extraServices || []).includes(
+                  service.id
+                );
+>>>>>>> Stashed changes
                 return (
                   <div
                     key={service.id}
