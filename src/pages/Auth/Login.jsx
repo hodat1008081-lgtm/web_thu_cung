@@ -1,6 +1,8 @@
 // src/pages/Auth/Login.jsx
 // Nhiệm vụ: Trâm & Nhóm - Phân hệ Xác thực & Đăng nhập (Role-based Authentication)
 import { useState } from 'react';
+import { ADMIN_ACCOUNT } from '../../data/mockData';
+import { findRegisteredAccount } from '../../data/account_register';
 
 export default function Login({ onLoginSuccess, onSwitchToRegister, onClose, users = [] }) {
   const [identifier, setIdentifier] = useState('');
@@ -10,8 +12,8 @@ export default function Login({ onLoginSuccess, onSwitchToRegister, onClose, use
 
   // Hàm điền nhanh tài khoản Admin mặc định để test tiện lợi
   const handleFillAdmin = () => {
-    setIdentifier('admin@petcare.com');
-    setPassword('admin123');
+    setIdentifier(ADMIN_ACCOUNT.email);
+    setPassword(ADMIN_ACCOUNT.password);
     setErrorMessage('');
   };
 
@@ -21,25 +23,23 @@ export default function Login({ onLoginSuccess, onSwitchToRegister, onClose, use
 
     const cleanId = identifier.trim().toLowerCase();
 
-    // 1. Kiểm tra tài khoản Admin mặc định theo yêu cầu đề bài
-    if (cleanId === 'admin@petcare.com' && password === 'admin123') {
+    // 1. Kiểm tra tài khoản Admin cố định
+    if (cleanId === ADMIN_ACCOUNT.email.toLowerCase() && password === ADMIN_ACCOUNT.password) {
       if (onLoginSuccess) {
-        onLoginSuccess({
-          name: 'Quản Trị Viên (Admin)',
-          email: 'admin@petcare.com',
-          role: 'admin',
-          phone: '1900 8899',
-        });
+        onLoginSuccess(ADMIN_ACCOUNT);
       }
       return;
     }
 
-    // 2. Tìm kiếm trong danh sách users (tài khoản đã đăng ký hoặc mẫu)
-    const matchedUser = users.find(
-      (u) =>
-        (u.email?.toLowerCase() === cleanId || u.phone === cleanId) &&
-        u.password === password
-    );
+    // 2. Tìm kiếm trong tài khoản khách hàng đã đăng ký (lưu trong account_register) hoặc danh sách users
+    const registeredUser = findRegisteredAccount(cleanId, password);
+    const matchedUser =
+      registeredUser ||
+      users.find(
+        (u) =>
+          (u.email?.toLowerCase() === cleanId || u.phone === cleanId) &&
+          u.password === password
+      );
 
     if (matchedUser) {
       if (onLoginSuccess) {
@@ -53,11 +53,9 @@ export default function Login({ onLoginSuccess, onSwitchToRegister, onClose, use
       return;
     }
 
-    // 3. Nếu không tìm thấy hoặc mật khẩu sai
-    // Cho phép đăng nhập linh hoạt nếu người dùng nhập email/phone hợp lệ (mặc định role user)
-    // nhưng nếu cố tình nhập admin@petcare.com mà sai pass thì báo lỗi
-    if (cleanId === 'admin@petcare.com') {
-      setErrorMessage('Mật khẩu tài khoản Admin không đúng! (Mặc định: admin123)');
+    // 3. Nếu cố tình nhập email Admin mà sai mật khẩu
+    if (cleanId === ADMIN_ACCOUNT.email.toLowerCase()) {
+      setErrorMessage(`Mật khẩu tài khoản Admin không đúng! (Mặc định: ${ADMIN_ACCOUNT.password})`);
       return;
     }
 
