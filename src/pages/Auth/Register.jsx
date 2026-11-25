@@ -1,6 +1,7 @@
 // src/pages/Auth/Register.jsx
 // Nhiệm vụ: Trâm & Nhóm - Phân hệ Đăng ký tài khoản thành viên (Mặc định role: "user")
 import { useState } from 'react';
+import { saveRegisteredAccount, isAccountRegistered } from '../../data/account_register';
 
 export default function Register({ onRegisterSuccess, onSwitchToLogin, onClose }) {
   const [fullName, setFullName] = useState('');
@@ -28,6 +29,12 @@ export default function Register({ onRegisterSuccess, onSwitchToLogin, onClose }
       return;
     }
 
+    // Kiểm tra tài khoản đã tồn tại chưa
+    if (isAccountRegistered(email, phone)) {
+      setErrorMessage('Email hoặc số điện thoại này đã được đăng ký! Vui lòng chuyển sang Đăng nhập.');
+      return;
+    }
+
     // Yêu cầu đề bài: "Khi người dùng đăng ký tài khoản mới qua Register, mặc định lưu thông tin người dùng với role: 'user'"
     const newUser = {
       id: `USR-${Date.now()}`,
@@ -35,9 +42,12 @@ export default function Register({ onRegisterSuccess, onSwitchToLogin, onClose }
       email: email.trim().toLowerCase(),
       phone: phone.trim(),
       password,
-      role: 'user', // Mặc định role: "user" theo yêu cầu 1
+      role: 'user', // Mặc định role: "user" theo yêu cầu
       createdAt: new Date().toLocaleDateString('vi-VN'),
     };
+
+    // Lưu vào account_register để lưu lại dùng cho các lần đăng nhập sau
+    saveRegisteredAccount(newUser);
 
     if (onRegisterSuccess) {
       onRegisterSuccess(newUser);

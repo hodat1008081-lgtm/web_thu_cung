@@ -15,7 +15,8 @@ import './App.css';
 
 // 1. Data dùng chung & Dữ liệu Khách / Admin
 import { INITIAL_PRODUCTS } from './data/products';
-import { INITIAL_USERS, INITIAL_ORDERS } from './data/mockData';
+import { INITIAL_USERS, INITIAL_ORDERS, ADMIN_ACCOUNT } from './data/mockData';
+import { saveRegisteredAccount } from './data/account_register';
 
 // 2. Header & Footer
 import Header from './components/Header/Header';
@@ -93,7 +94,18 @@ export default function App() {
   const [users, setUsers] = useState(() => {
     try {
       const saved = localStorage.getItem('petcare_users');
-      return saved ? JSON.parse(saved) : INITIAL_USERS;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Lọc bỏ data giả người dùng cũ nếu có lưu từ trước
+          const clean = parsed.filter(
+            (u) => u && u.id !== 'USR-001' && u.id !== 'USR-002' && u.id !== 'USR-003'
+          );
+          const hasAdmin = clean.some((u) => u.email === ADMIN_ACCOUNT.email);
+          return hasAdmin ? clean : [ADMIN_ACCOUNT, ...clean];
+        }
+      }
+      return INITIAL_USERS;
     } catch {
       return INITIAL_USERS;
     }
@@ -879,7 +891,8 @@ export default function App() {
           ) : (
             <Register
               onRegisterSuccess={(newUser) => {
-                // Yêu cầu 1: Lưu tài khoản mới đăng ký với role: "user"
+                // Lưu tài khoản mới vào account_register và state
+                saveRegisteredAccount(newUser);
                 setUsers((prev) => [newUser, ...prev]);
                 setCurrentUser(newUser);
                 setIsAuthOpen(false);

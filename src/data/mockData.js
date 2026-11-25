@@ -1,44 +1,24 @@
 // src/data/mockData.js
-// Dữ liệu mẫu dùng chung cho Hệ thống Tài khoản (Auth) & Đơn hàng (Orders)
+// Dữ liệu dùng chung cho Hệ thống Tài khoản (Auth) & Đơn hàng (Orders)
+import { getRegisteredAccounts } from './account_register';
 
-// 1. Danh sách tài khoản người dùng ban đầu
+// 1. Tài khoản Quản trị viên (Admin) cố định
+export const ADMIN_ACCOUNT = {
+  id: 'USR-ADMIN',
+  email: 'admin@petcare.com',
+  password: 'admin123',
+  name: 'Quản Trị Viên (Admin)',
+  phone: '1900 8899',
+  role: 'admin',
+  createdAt: '2026-01-01',
+};
+
+// 2. Danh sách tài khoản người dùng ban đầu:
+// Không tạo data giả về người dùng, chỉ giữ lại const tài khoản admin
+// và nạp các tài khoản khách hàng thực tế đã đăng ký từ file account_register
 export const INITIAL_USERS = [
-  {
-    id: 'USR-ADMIN',
-    email: 'admin@petcare.com',
-    password: 'admin123',
-    name: 'Quản Trị Viên (Admin)',
-    phone: '1900 8899',
-    role: 'admin',
-    createdAt: '2026-01-01',
-  },
-  {
-    id: 'USR-001',
-    email: 'tranminhhien@gmail.com',
-    password: 'user123',
-    name: 'Trần Minh Hiển',
-    phone: '0988 666 888',
-    role: 'user',
-    createdAt: '2026-02-15',
-  },
-  {
-    id: 'USR-002',
-    email: 'tram@petcare.vn',
-    password: 'user123',
-    name: 'Lê Hoàng Trâm',
-    phone: '0977 123 456',
-    role: 'user',
-    createdAt: '2026-03-10',
-  },
-  {
-    id: 'USR-003',
-    email: 'sansan@gmail.com',
-    password: 'user123',
-    name: 'Nguyễn San San',
-    phone: '0933 999 111',
-    role: 'user',
-    createdAt: '2026-03-12',
-  },
+  ADMIN_ACCOUNT,
+  ...getRegisteredAccounts(),
 ];
 
 // 2. Danh sách đơn đặt hàng ban đầu kết nối giữa Khách hàng và Admin
