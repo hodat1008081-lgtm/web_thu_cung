@@ -1,7 +1,7 @@
 // src/components/Cart/CartSidebar.jsx
 // Nhiệm vụ: Trâm - Giỏ hàng thông minh & Quản lý đơn hàng dự kiến
-import React from 'react';
 import CartItem from './CartItem';
+import CartCheckbox from './CartCheckbox';
 import { formatCurrency } from '../../data/products';
 
 export default function CartSidebar({
@@ -10,13 +10,21 @@ export default function CartSidebar({
   cartItems = [],
   onUpdateQty,
   onRemoveItem,
+  onToggleSelect,
+  onToggleSelectAll,
   onProceedCheckout,
 }) {
   if (!isOpen) return null;
 
   const totalCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
-  const totalPrice = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const isFreeShip = totalPrice >= 500000;
+  const selectedItems = cartItems.filter((item) => item.selected !== false);
+  const selectedCount = selectedItems.reduce((acc, item) => acc + item.quantity, 0);
+  const totalPrice = selectedItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const hasSelectedItems = selectedItems.length > 0;
+  const isFreeShip = hasSelectedItems && totalPrice >= 500000;
+  const shippingFee = hasSelectedItems ? (isFreeShip ? 0 : 50000) : 0;
+  const finalTotal = totalPrice + shippingFee;
+  const allSelected = cartItems.length > 0 && selectedItems.length === cartItems.length;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -29,7 +37,7 @@ export default function CartSidebar({
         <p className="modal-subtitle">
           {cartItems.length === 0
             ? 'Hiện chưa có sản phẩm nào'
-            : `Đang có ${totalCount} bé cưng/sản phẩm được chọn`}
+            : `Đang có ${totalCount} bé cưng/sản phẩm (${selectedCount} đã chọn thanh toán)`}
         </p>
 
         {cartItems.length === 0 ? (
@@ -44,12 +52,36 @@ export default function CartSidebar({
           </div>
         ) : (
           <>
+            {/* Thanh chọn tất cả sản phẩm */}
+            <div className="cart-select-all-bar flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <CartCheckbox
+                  checked={allSelected}
+                  onChange={(checked) => onToggleSelectAll && onToggleSelectAll(checked)}
+                  ariaLabel="Chọn tất cả sản phẩm trong giỏ hàng"
+                  title={allSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả sản phẩm'}
+                />
+                <button
+                  type="button"
+                  onClick={() => onToggleSelectAll && onToggleSelectAll(!allSelected)}
+                  className="text-sm font-semibold text-slate-700 cursor-pointer"
+                >
+                  Chọn tất cả ({selectedItems.length}/{cartItems.length})
+                </button>
+              </div>
+              <span className="text-xs text-slate-500">
+                Đã chọn {selectedCount} món
+              </span>
+            </div>
+
             {/* Danh sách các CartItem */}
             <div className="cart-items-list">
               {cartItems.map((item) => (
                 <CartItem
                   key={item.id}
                   item={item}
+                  isSelected={item.selected !== false}
+                  onToggleSelect={onToggleSelect}
                   onUpdateQty={onUpdateQty}
                   onRemoveItem={onRemoveItem}
                 />
@@ -59,20 +91,20 @@ export default function CartSidebar({
             {/* Bảng tổng tiền & phí giao hàng */}
             <div className="cart-total-box">
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#64748b', marginBottom: '6px' }}>
-                <span>Tạm tính ({totalCount} món):</span>
+                <span>Tạm tính ({selectedCount} món đã chọn):</span>
                 <span>{formatCurrency(totalPrice)}</span>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#64748b', marginBottom: '10px' }}>
                 <span>Phí vận chuyển chuồng chuyên dụng:</span>
                 <span style={{ color: isFreeShip ? '#10b981' : '#ff6b35', fontWeight: '700' }}>
-                  {isFreeShip ? 'MIỄN PHÍ' : '50.000 ₫'}
+                  {!hasSelectedItems ? '0 ₫' : isFreeShip ? 'MIỄN PHÍ' : '50.000 ₫'}
                 </span>
               </div>
 
               <div className="cart-total-row">
                 <span>Tổng cộng:</span>
-                <span>{formatCurrency(isFreeShip ? totalPrice : totalPrice + 50000)}</span>
+                <span>{formatCurrency(finalTotal)}</span>
               </div>
 
               <div style={{ fontSize: '0.8rem', color: '#10b981', marginTop: '8px' }}>
@@ -82,14 +114,19 @@ export default function CartSidebar({
 
             {/* Nút hành động */}
             <button
-              className="submit-btn-full"
+              className={`submit-btn-full transition-all duration-200 ${
+                !hasSelectedItems ? 'opacity-60 cursor-not-allowed' : ''
+              }`}
+              disabled={!hasSelectedItems}
               onClick={() => {
-                if (onProceedCheckout) {
+                if (hasSelectedItems && onProceedCheckout) {
                   onProceedCheckout();
                 }
               }}
             >
-              Tiến Hành Đặt Hàng & Thanh Toán →
+              {hasSelectedItems
+                ? `Tiến Hành Đặt Hàng & Thanh Toán (${selectedCount}) →`
+                : 'Vui lòng chọn ít nhất 1 sản phẩm để thanh toán'}
             </button>
           </>
         )}

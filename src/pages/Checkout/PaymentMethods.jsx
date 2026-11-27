@@ -12,7 +12,7 @@ export default function PaymentMethods({
   const [selectedMethod, setSelectedMethod] = useState('cod');
 
   const totalPrice = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const shippingFee = totalPrice >= 500000 ? 0 : 50000;
+  const shippingFee = cartItems.length === 0 || totalPrice >= 500000 ? 0 : 50000;
   const finalTotal = totalPrice + shippingFee;
 
   const paymentOptions = [

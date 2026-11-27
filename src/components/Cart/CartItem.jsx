@@ -1,13 +1,32 @@
 // src/components/Cart/CartItem.jsx
 // Nhiệm vụ: Trâm - Component hiển thị từng món hàng trong giỏ
-import React from 'react';
 import { formatCurrency } from '../../data/products';
+import CartCheckbox from './CartCheckbox';
 
-export default function CartItem({ item, onUpdateQty, onRemoveItem }) {
+export default function CartItem({
+  item,
+  isSelected,
+  onToggleSelect,
+  onUpdateQty,
+  onRemoveItem,
+}) {
   if (!item) return null;
 
+  const checked = typeof isSelected === 'boolean' ? isSelected : item.selected !== false;
+
   return (
-    <div className="cart-item-row">
+    <div
+      className={`cart-item-row flex items-center gap-3.5 pb-3.5 border-b border-slate-100 transition-all duration-200 ${
+        checked ? 'opacity-100' : 'opacity-60'
+      }`}
+    >
+      <CartCheckbox
+        checked={checked}
+        onChange={() => onToggleSelect && onToggleSelect(item.id)}
+        ariaLabel={`Chọn ${item.name}`}
+        title={checked ? 'Bỏ chọn sản phẩm này' : 'Chọn sản phẩm này để thanh toán'}
+      />
+
       <img src={item.image} alt={item.name} className="cart-item-thumb" />
 
       <div className="cart-item-details">

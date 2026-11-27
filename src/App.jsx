@@ -77,6 +77,7 @@ export default function App() {
       price: 420000,
       image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=600&auto=format&fit=crop&q=80',
       quantity: 1,
+      selected: true,
     },
   ]);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -131,12 +132,28 @@ export default function App() {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
         return prev.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + (product.quantity || 1) } : item
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + (product.quantity || 1), selected: true }
+            : item
         );
       }
-      return [...prev, { ...product, quantity: product.quantity || 1 }];
+      return [...prev, { ...product, quantity: product.quantity || 1, selected: true }];
     });
     showToast(`🐾 Đã thêm "${product.name}" vào giỏ hàng!`);
+  };
+
+  // Chọn / bỏ chọn từng sản phẩm trong giỏ hàng
+  const handleToggleSelectCartItem = (id) => {
+    setCartItems((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, selected: item.selected === false } : item
+      )
+    );
+  };
+
+  // Chọn / bỏ chọn tất cả sản phẩm trong giỏ hàng
+  const handleToggleSelectAllCart = (checked) => {
+    setCartItems((prev) => prev.map((item) => ({ ...item, selected: checked })));
   };
 
   // Cập nhật số lượng giỏ hàng
@@ -188,18 +205,23 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Tiến hành checkout từ Giỏ hàng
+  // Tiến hành checkout từ Giỏ hàng (chỉ thanh toán các món đã được tick chọn)
   const handleProceedCheckout = () => {
+    if (selectedCartItems.length === 0) {
+      showToast('Vui lòng chọn ít nhất 1 sản phẩm để thanh toán!');
+      return;
+    }
     setIsCartOpen(false);
     setCurrentTab('checkout');
     setCheckoutStep(1);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Xác nhận đặt hàng từ PaymentMethods
+  // Xác nhận đặt hàng từ PaymentMethods (giữ lại các món chưa chọn trong giỏ)
   const handleConfirmOrder = (orderData) => {
     setCurrentOrderTrackingId(orderData.orderId);
-    setCartItems([]);
+    const purchasedIds = new Set((orderData.items || []).map((item) => item.id));
+    setCartItems((prev) => prev.filter((item) => !purchasedIds.has(item.id)));
     showToast(`🎉 Đặt hàng thành công! Mã đơn: ${orderData.orderId}`);
     setCurrentTab('tracking');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -324,6 +346,7 @@ export default function App() {
   }, [products, activeCategory, searchTerm, priceRange, sortBy]);
 
   const totalCartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+  const selectedCartItems = cartItems.filter((item) => item.selected !== false);
 
   // Cuộn đến phần sản phẩm
   const scrollToProducts = () => {
@@ -639,7 +662,7 @@ export default function App() {
               />
             ) : (
               <PaymentMethods
-                cartItems={cartItems}
+                cartItems={selectedCartItems}
                 customerInfo={customerInfo}
                 onConfirmOrder={handleConfirmOrder}
                 onBackToForm={() => setCheckoutStep(1)}
@@ -726,6 +749,8 @@ export default function App() {
         cartItems={cartItems}
         onUpdateQty={handleUpdateQty}
         onRemoveItem={handleRemoveCartItem}
+        onToggleSelect={handleToggleSelectCartItem}
+        onToggleSelectAll={handleToggleSelectAllCart}
         onProceedCheckout={handleProceedCheckout}
       />
 
